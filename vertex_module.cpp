@@ -18,7 +18,6 @@
 #include <falaise/snemo/datamodels/tracker_trajectory_data.h>
 #include "falaise/snemo/datamodels/calibrated_calorimeter_hit.h"
 #include "falaise/snemo/datamodels/base_trajectory_pattern.h"
-#include <falaise/snemo/datamodels/calibrated_data.h>
 
 // Registration instantiation macro :
 DPP_MODULE_REGISTRATION_IMPLEMENT(vertex_module,
@@ -50,6 +49,7 @@ void vertex_module::initialize(const datatools::properties  & setup_,
 
   // check the label
   _TTD_label_ = snemo::datamodel::data_info::default_tracker_trajectory_data_label();
+  _TCD_label_ = snemo::datamodel::data_info::default_tracker_clustering_data_label();
 
   eventCounter = 0;
   this->_set_initialized(true);
@@ -66,6 +66,7 @@ void vertex_module::reset()
   
   // clean up
   _TTD_label_.clear();
+  _TCD_label_.clear();
 
   eventCounter = 0;
   std::cout << "Vertex Extrapolator Module finished." << std::endl;
@@ -92,24 +93,41 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
 	       "Module 'Vertex Extrapolator' is not initialized !");
   
   ///////////////////////////////////
-  // Check tracker trajectory data //
+  // Check tracker clustering data //
   ///////////////////////////////////
 
-  bool preserve_former_output = true; // keep all
-  
-  // check if some 'tracker_trajectory_data' are available in the data model:
-  snemo::datamodel::tracker_trajectory_data * ptr_trajectory_data = 0;
-  if (! data_record_.has(_TTD_label_)) {
-    ptr_trajectory_data = &(data_record_.add<snemo::datamodel::tracker_trajectory_data>(_TTD_label_));
-  } else {
-    ptr_trajectory_data = &(data_record_.grab<snemo::datamodel::tracker_trajectory_data>(_TTD_label_));
+  snemo::datamodel::tracker_clustering_data * ptr_cluster_data = 0;
+  if (!data_record_.has(_TCD_label_)) {
+    std::cerr << "failed to grab TCD bank " << std::endl;
+    return dpp::base_module::PROCESS_INVALID;
   }
-  snemo::datamodel::tracker_trajectory_data & the_trajectory_data = *ptr_trajectory_data;
-  if (the_trajectory_data.has_solutions()) 
-    if (! preserve_former_output) 
-      the_trajectory_data.reset();
-  
-  
+  else {
+    ptr_clustering_data = &(data_record_.grab<snemo::datamodel::tracker_clustering_data>(_TCD_label_));
+    snemo::datamodel::tracker_clustering_data & the_clustering_data = *ptr_clustering_data;
+    if (! the_clustering_data.has_solutions()) {
+      std::cerr << "TCD bank empty, no clustering data." << std::endl;
+      return dpp::base_module::PROCESS_INVALID;
+    }
+  }
+
+  ///////////////////////////////////
+  // Check tracker trajectory data // not used
+  ///////////////////////////////////
+
+  snemo::datamodel::tracker_trajectory_data * ptr_trajectory_data = 0;
+  if (!data_record_.has(_TTD_label_)) {
+    std::cerr << "failed to grab TTD bank " << std::endl;
+    return dpp::base_module::PROCESS_INVALID;
+  }
+  else {
+    ptr_trajectory_data = &(data_record_.grab<snemo::datamodel::tracker_trajectory_data>(_TTD_label_));
+    snemo::datamodel::tracker_trajectory_data & the_trajectory_data = *ptr_trajectory_data;
+    if (! the_trajectory_data.has_solutions()) {
+      std::cerr << "TTD bank empty, no trajectories." << std::endl;
+      return dpp::base_module::PROCESS_INVALID;
+    }
+  }
+
   /********************
    * Process the data *
    ********************/
@@ -118,56 +136,40 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
   // Process the vertex extrapolator:
   namespace sdm = snemo::datamodel;
 
-  // Process events for trajectory consolidation
-  // make a trajectory solution
-  sdm::tracker_trajectory_solution::handle_type htts(new sdm::tracker_trajectory_solution);
-  the_trajectory_data.add_solution(htts, true);
-  the_trajectory_data.grab_solutions().back().grab().set_solution_id(the_trajectory_data.get_number_of_solutions() - 1);
-  sdm::tracker_trajectory_solution & trajectory_solution = the_trajectory_data.grab_solutions().back().grab(); // maybe store in here a bit
-
   // Process clusters hits for fitting
   std::cout << "In process: event counter = " << eventCounter << std::endl;
 
   // get all cluster solutions
-  const sdm::tracker_clustering_data::solution_col_type& all_solutions = ptr_cluster_data->get_solutions();
+  const sdm::tracker_clustering_data::solution_col_type& all_cls_solutions = ptr_cluster_data->get_solutions();
 
-  int nsol = 0;
-  int ncl  = 0;
-  for (auto entry : all_solutions) { 
-    const sdm::tracker_clustering_solution::cluster_col_type &defaults = entry.get().get_clusters();
-    std::cout << "cluster solution number: " << ++nsol << std::endl;
+  // get all trajectory solutions
+  // somehow, making line, etc. _trj collection
 
-    for (auto cl_handle : defaults) {
-      const sdm::calibrated_tracker_hit::collection_type & gg_hits_col = cl_handle.get().get_hits();
-      ncl = cl_handle.get().get_cluster_id();
-      std::cout << "cluster number: " << ncl << std::endl;
+  // last cls solution, normally only one entry anyway
+  const sdm::tracker_clustering_solution::cluster_col_type &cls_defaults = all_cls_solutions.back().get().get_clusters();
+  
+  std::vector<VertexInfo> all_info;
+  VertexInfo info;
+  for (auto entry : cls_defaults) { // get sdm::tracker_cluster handle
+    // check all clusters for wire_candidate
+    const sdm::calibrated_tracker_hit::collection_type & gg_hits_col = entry.get().get_hits();
 
-      rings.clear();
-      std::cout << "number of gg hits: " << gg_hits_col.size() << std::endl;
-      for (auto hit_handle : gg_hits_col) {
-	// work with geiger hits as members of a given cluster
-	const sdm::calibrated_tracker_hit & hit = hit_handle.get();
-	ring.rerr   = hit.get_sigma_r();
-	ring.zerr   = hit.get_sigma_z();
-	ring.radius = hit.get_r();
-	ring.wirex  = hit.get_x();
-	ring.wirey  = hit.get_y();
-	ring.zcoord = hit.get_z();
-	mi.hitid  = hit.get_id();
-	mi.side   = hit.get_side();
-	mi.row    = hit.get_row();
-	mi.column = hit.get_layer();
-	th.clid = ncl;
-	th.mi = mi;
-	th.gr = ring;
-	rings.push_back(th);
-      }
-
-      // ready to extrapolate
-    }
+    VertexInfo info = check_on_wire(gg_hits_col);
+    info.clsid = entry.get().get_cluster_id();
+    all_info.push_back(info);
+    // into a function to check on wire_candidate with vertex pair<bool, bool> 
+    // for <calo extrapolate, foil extrapolate> = if any one pair entry false then wire candidate is true
+    // for (auto hit_handle : gg_hits_col) {
+    //   const sdm::calibrated_tracker_hit & hit = hit_handle.get();
   }
-
+  // ready to extrapolate, work with loop over all trj containers, check on wire_candidate via clsid
+  
   eventCounter++;
   return dpp::base_module::PROCESS_SUCCESS;
 }
 
+
+
+VertexInfo vertex_module::check_on_wire(const sdm::calibrated_tracker_hit::collection_type & data) {
+
+}

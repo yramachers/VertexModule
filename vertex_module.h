@@ -19,6 +19,7 @@
 #include "bayeux/geomtools/geometry_service.h"
 
 // - Falaise:
+#include <falaise/snemo/datamodels/calibrated_tracker_hit.h>
 
 // This project:
 #include <vertex_library.h>
@@ -48,11 +49,12 @@ public:
 	
 
 protected:
-
+	VertexInfo check_on_wire(const snemo::datamodel::calibrated_tracker_hit::collection_type & data);
 
 private:
 	int eventCounter;
-	std::string _TTD_label_;
+	std::string _TTD_label_; // not used
+	std::string _TCD_label_;
 	
 	// geometry service
 	const geomtools::manager* geometry_manager_; //!< The geometry manager
