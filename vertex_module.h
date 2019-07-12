@@ -20,6 +20,7 @@
 
 // - Falaise:
 #include <falaise/snemo/datamodels/calibrated_tracker_hit.h>
+#include <falaise/snemo/geometry/locator_plugin.h>
 
 // This project:
 #include <vertex_library.h>
@@ -58,6 +59,7 @@ private:
 	
 	// geometry service
 	const geomtools::manager* geometry_manager_; //!< The geometry manager
+	const snemo::geometry::locator_plugin* locator_plugin_; //!< The SuperNEMO locator plugin
 
 	// Macro to automate the registration of the module :
 	DPP_MODULE_REGISTRATION_INTERFACE(vertex_module)

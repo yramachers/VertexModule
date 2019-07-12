@@ -6,22 +6,44 @@
 #include <utility>
 
 // ROOT includes
+#include <Math/Point3D.h>
 #include <Math/Vector3D.h>
-#include <Math/Vector2D.h>
-#include <TMath.h>
-#include <TVector3.h>
 
 
 // vertex info storage
 struct VertexInfo {
   // how to extrapolate
-  std::pair<bool, bool> leftright;
+  std::pair<bool, bool> foilcalo;
   bool wire_candidate;
   // id to link to trajectory solution
   int clsid;
+  // id to link to plane
+  int planeid;
 };
 
+
+// geometric plane struct
+struct Plane {
+  // consider a plane as normal vector and a point
+  ROOT::Math::XYZVector normal;
+  ROOT::Math::XYZPoint point; // cartesian coordinates assumed
+  int planeid; // from position in vector
+  int side; // flags x negative (0) or positive (1)
+};
+
+
 // *** repeat data model used for trajectories
+// path point store
+struct PathPoint {
+  // just a 3D point with errors for simple fitting
+  std::pair<int,size_t> pointid;
+  double xc;
+  double yc;
+  double zc;
+  double errx;
+  double erry;
+  double errz;
+};
 
 // line fit store, 4 parameter with errors
 struct LineFit {
@@ -90,7 +112,7 @@ protected:
 
 public:
   
-  Interval(); // Default Constructor
+  Interval(); // Default Constructor, not used
   Interval(double s, double e); // Constructor with lower and upper limit
   
   double midinterval() {return 0.5*(lower+upper);} // mean interval value
@@ -99,6 +121,42 @@ public:
   bool empty() {return lower == upper;} // check for empty interval
   bool overlap(Interval other); // return true if overlap exists
     
+};
+
+
+class VertexExtrapolator
+{
+  // input some trajectory and retrieve an intersection ellipse
+  // in form of two intervals as main axes
+
+private:
+  Interval axis1;
+  Interval axis2;
+  LineFit lf;
+  HelixFit hf;
+  BrokenLineFit blf;
+  std::vector<VertexInfo> allinfo;
+  std::vector<Plane> all_planes;
+
+protected:
+  bool zcheck(); // consider wire candidate in z to gveto, still a wire candidate?
+  void intersect(); // action, checks on valid plane and trajectory
+  int find_clid(int id);
+
+public:
+  
+  VertexExtrapolator(); // Default Constructor
+  VertexExtrapolator(std::vector<Plane> pl); // main Constructor
+  ~VertexExtrapolator() {all_planes.clear();}
+  
+  // signal data input and run all intersections
+  void setTrajectory(LineFit dummy, std::vector<VertexInfo> vi) {lf = dummy; allinfo = vi; intersect();}
+  void setTrajectory(HelixFit dummy, std::vector<VertexInfo> vi) {hf = dummy; allinfo = vi; intersect();}
+  void setTrajectory(BrokenLineFit dummy, std::vector<VertexInfo> vi) {blf = dummy; allinfo = vi; intersect();}
+
+  // result of intersection
+  std::pair<VertexInfo, std:pair<Interval, Interval> > fullvertex();
+  // could be empty axes for no intersection
 };
 
 
