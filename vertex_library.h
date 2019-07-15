@@ -32,6 +32,22 @@ struct Plane {
 };
 
 
+// geometric ellipse struct
+struct Ellipse {
+  Interval axis1;
+  Interval axis2;
+  int planeid; // link to plane
+  int side; // flags x negative (0) or positive (1)
+};
+
+
+// geometric line3d struct
+struct Line3d {
+  ROOT::Math::XYZVector u;
+  ROOT::Math::XYZPoint point; // cartesian coordinates assumed
+};
+
+
 // *** repeat data model used for trajectories
 // path point store
 struct PathPoint {
@@ -129,33 +145,39 @@ class VertexExtrapolator
   // input some trajectory and retrieve an intersection ellipse
   // in form of two intervals as main axes
 
-private:
-  Interval axis1;
-  Interval axis2;
+ private:
+  Ellipse spot1;
+  Ellipse spot2;
   LineFit lf;
   HelixFit hf;
   BrokenLineFit blf;
+  VertexInfo info;
   std::vector<VertexInfo> allinfo;
-  std::vector<Plane> all_planes;
+  std::vector<Plane> allPlanes;
+  void intersect_line();
+  void intersect_helix();
+  void intersect_brokenline();
+
 
 protected:
-  bool zcheck(); // consider wire candidate in z to gveto, still a wire candidate?
-  void intersect(); // action, checks on valid plane and trajectory
-  int find_clid(int id);
+  void zcheck_line(); // consider wire candidate in z to gveto, still a wire candidate?
+  void zcheck_helix(); // consider wire candidate in z to gveto, still a wire candidate?
+  void intersect(int which); // action, checks on valid plane and trajectory
+
 
 public:
   
   VertexExtrapolator(); // Default Constructor
   VertexExtrapolator(std::vector<Plane> pl); // main Constructor
-  ~VertexExtrapolator() {all_planes.clear();}
+  ~VertexExtrapolator() {allPlanes.clear(); allInfo.clear();}
   
   // signal data input and run all intersections
-  void setTrajectory(LineFit dummy, std::vector<VertexInfo> vi) {lf = dummy; allinfo = vi; intersect();}
-  void setTrajectory(HelixFit dummy, std::vector<VertexInfo> vi) {hf = dummy; allinfo = vi; intersect();}
-  void setTrajectory(BrokenLineFit dummy, std::vector<VertexInfo> vi) {blf = dummy; allinfo = vi; intersect();}
+  void setTrajectory(LineFit dummy, std::vector<VertexInfo> vi) {lf = dummy; allInfo = vi; intersect(0);}
+  void setTrajectory(HelixFit dummy, std::vector<VertexInfo> vi) {hf = dummy; allInfo = vi; intersect(1);}
+  void setTrajectory(BrokenLineFit dummy, std::vector<VertexInfo> vi) {blf = dummy; allInfo = vi; intersect(2);}
 
-  // result of intersection
-  std::pair<VertexInfo, std:pair<Interval, Interval> > fullvertex();
+  // result of intersection, first foil spot, second calo spot
+  std::pair<VertexInfo, std:pair<Ellipse, Ellipse> > fullvertex();
   // could be empty axes for no intersection
 };
 

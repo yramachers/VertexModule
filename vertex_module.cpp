@@ -180,7 +180,7 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
   ROOT::Math::XYZVector norm2(-1.0,0.0,0.0); // looking in neg x direction
   Plane mcalo_posx;
   mcalo_posx.planeid = ++whichcalo;
-  mcalo_posx.side = 1;
+  mcalo_posx.side = 1; // positive x
   mcalo_posx.normal = norm2;
   mcalo_posx.point = p2;
   planes.push_back(mcalo_posx);
@@ -296,7 +296,6 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
   const sdm::tracker_clustering_solution::cluster_col_type &cls_defaults = all_cls_solutions.back().get().get_clusters();
   
   std::vector<VertexInfo> all_info;
-  VertexInfo info;
   for (auto entry : cls_defaults) { // get sdm::tracker_cluster handle
     // check all clusters for wire_candidate
     const sdm::calibrated_tracker_hit::collection_type & gg_hits_col = entry.get().get_hits();
@@ -317,7 +316,7 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
     // loop over all types and get all available intersections
     for (LineFit lf : onecluster) {
       ve.setTrajectory(lf, all_info);
-
+      std::pair<VertexInfo, std:pair<Interval, Interval> >  vt = ve.fullvertex();
     }
   }
   
