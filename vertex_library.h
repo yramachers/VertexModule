@@ -9,12 +9,26 @@
 #include <Math/Point3D.h>
 #include <Math/Vector3D.h>
 
+// geiger data store
+struct MetaInfo {
+  // geiger hit info
+  int hitid;
+  int side; 
+  int row; 
+  int column;
+  double wirex;
+  double wirey;
+  double zcoord;
+};
 
 // vertex info storage
 struct VertexInfo {
   // how to extrapolate
   std::pair<bool, bool> foilcalo;
   bool wire_candidate;
+  // making sense of intersection points for helices
+  std::vector<MetaInfo> minx
+  std::vector<MetaInfo> maxx
   // id to link to trajectory solution
   int clsid;
   // id to link to plane
@@ -45,6 +59,15 @@ struct Ellipse {
 struct Line3d {
   ROOT::Math::XYZVector u;
   ROOT::Math::XYZPoint point; // cartesian coordinates assumed
+};
+
+
+// geometric helix3d struct
+struct Helix3d {
+  ROOT::Math::XYZPoint point; // cartesian coordinates assumed
+  double radius;
+  double pitch;
+  int charge;
 };
 
 

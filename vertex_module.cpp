@@ -304,6 +304,7 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
     // for <foil direction, calo direction>
     VertexInfo info = check_on_wire(gg_hits_col);
     info.clsid = entry.get().get_cluster_id();
+    findmaxmin(info, gg_hits_col);
     all_info.push_back(info);
   }
 
@@ -355,4 +356,51 @@ VertexInfo vertex_module::check_on_wire(const sdm::calibrated_tracker_hit::colle
   vi.foilcalo = std::make_pair(foilside, caloside);
 
   return vi;
+}
+
+void vertex_module::findmaxmin(VertexInfo& vi, const sdm::calibrated_tracker_hit::collection_type & data)
+{
+  // Not knowing what the trajectory is, collect some geiger cell
+  // information required for helices to determine valid 
+  // plane intersection points and charge from curvature if possible
+  MetaInfo mi;
+  std::vector<int> dummy
+  for (auto hit_handle : data) { 
+    const sdm::calibrated_tracker_hit & hit = data.get();
+    dummy.push_back(hit.get_layer()); // store x layer [0-8]
+  }
+  std::vector<int>::iterator maxit = std::max_element(dummy.begin(), dummy.end());
+  std::vector<int>::iterator minit = std::min_element(dummy.begin(), dummy.end());
+  int min = *minit; // search target value
+  int max = *maxit; // search target value
+  int mymincount = (int) std::count(dummy.begin(), dummy.end(), min);
+  int mymaxcount = (int) std::count(dummy.begin(), dummy.end(), max);
+  int pos;
+  for (int i=0;i<mymincount;i++) { // finds all min layer value entries
+    pos = minit - dummy.begin();
+    mi.hitid  = data.at(pos).get().get_id();
+    mi.side   = data.at(pos).get().get_side();
+    mi.row    = data.at(pos).get().get_row();
+    mi.column = data.at(pos).get().get_layer();
+    mi.wirex  = data.at(pos).get().get_x();
+    mi.wirey  = data.at(pos).get().get_y();
+    mi.zcoord = data.at(pos).get().get_z();
+    vi.minx.push_back(mi);
+    ++minit;
+    it = std::find(minit, dummy.end(), min);
+  }
+  for (int i=0;i<mymaxcount;i++) { // finds all max layer value entries
+    pos = maxit - dummy.begin();
+    mi.hitid  = data.at(pos).get().get_id();
+    mi.side   = data.at(pos).get().get_side();
+    mi.row    = data.at(pos).get().get_row();
+    mi.column = data.at(pos).get().get_layer();
+    mi.wirex  = data.at(pos).get().get_x();
+    mi.wirey  = data.at(pos).get().get_y();
+    mi.zcoord = data.at(pos).get().get_z();
+    vi.maxx.push_back(mi);
+    ++maxit;
+    it = std::find(maxit, dummy.end(), max);
+  }
+
 }

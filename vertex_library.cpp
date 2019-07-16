@@ -2,6 +2,7 @@
 #include <vertex_library.h>
 
 // ROOT includes
+#include <TMath.h>
 
 
 // std
@@ -73,6 +74,8 @@ void VertexExtrapolator::intersect(int which) // main working method
   return;
 }
 
+// Line section
+// ************
 void VertexExtrapolator::intersect_line()
 {
   std::vector<ROOT::Math::XYZPoint> isecs;
@@ -84,7 +87,22 @@ void VertexExtrapolator::intersect_line()
   ROOT::Math::XYZVector pbest(0.0, lf.ixy, lf.ixz);
   current.u = ubest;
   current.point = pbest;
-  for (Plane& p : allPlanes) {
+  if (info.foilcalo.second) { // only if a calo vertex is required
+    for (Plane p : allPlanes) {
+      ROOT::Math::XYZPoint intersection = intersect_line_plane(current, p);
+      if (point_plane_check(intersection)) {
+	isecs.push_back(intersection);
+	idcollection.push_back(p.planeid);
+      }
+    }
+  }
+  if (info.foilcalo.first) { // only if a foil vertex is required
+    ROOT::Math::XYZVector norm(1.0,0.0,0.0);
+    ROOT::Math::XYZVector origin(0.0,0.0,0.0);
+    Plane p;
+    p.planeid = 10; // foil plane
+    p.normal = norm;
+    p.point  = origin;
     ROOT::Math::XYZPoint intersection = intersect_line_plane(current, p);
     if (point_plane_check(intersection)) {
       isecs.push_back(intersection);
@@ -93,15 +111,6 @@ void VertexExtrapolator::intersect_line()
   }
 }
 
-
-
-void VertexExtrapolator::intersect_helix()
-{
-}
-
-void VertexExtrapolator::intersect_brokenline()
-{
-}
 
 ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d l, Plane p)
 {
@@ -117,8 +126,84 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d l, Plane p)
 }
 
 
- bool VertexExtrapolator::point_plane_check(ROOT::Math::XYZPoint point)
+
+// Broken Line section
+// *******************
+void VertexExtrapolator::intersect_brokenline()
 {
+}
+
+
+// Helix section
+// ************
+void VertexExtrapolator::intersect_helix()
+{
+  std::vector<ROOT::Math::XYZPoint> isecs;
+  std::vector<int> idcollection;
+  Helix3d current;
+  ROOT::Math::XYZVector pbest(hf.xc, hf.yc, hf.zc); // centre
+  current.point  = pbest;
+  current.radius = hf.radius;
+  current.pitch  = hf.pitch;
+  current.charge = 0;
+
+  int which = 0;
+  for (Plane p : allPlanes) {
+    if (p.planeid<2)
+      which = 0; // main wall
+    else if (p.planeid>=2 && p.planeid<4 || p.planeid>=6 && p.planeid<8)
+      which = 1; // xwall
+    else
+      which = 2; // gamma veto
+    ROOT::Math::XYZPoint intersection = intersect_helix_plane(current, p, which);
+    if (point_plane_check(intersection)) {
+      isecs.push_back(intersection);
+      idcollection.push_back(p.planeid);
+    }
+  }
+}
+
+
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d h, Plane p, int which)
+{
+  ROOT::Math::XYZPoint isec;
+  switch (which) {
+  case 0: 
+    isec = intersect_helix_mainw(h, p); // side from p.side
+    break;
+  case 1:
+    isec = intersect_helix_xwall(h, p); // +- y from p.planeid
+    break;
+  case 2:
+    isec = intersect_helix_gveto(h, p); // +- z from p.planeid
+    break;
+  }
+  return isec;
+}
+
+
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane p)
+{
+  // parameter
+  double x0 = p.point.x(); // +-x coordinate of main wall
+  double xc = h.point.x(); // helix centre x
+  double r  = h.radius;
+  double arg = (x0 - xc) / r;
+  if (arg>=1) // not permitted
+    return ROOT::Math::XYZPoint i(1001.0,0.0,0.0); // no intersection signature x>1000
+  double pitch = h.pitch;
+  double t = TMath::Acos(2.0 * TMath::Pi() * arg);
+  double y = h.point.y() + TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
+  double z = h.point.z() + pitch * t;
+  return ROOT::Math::XYZPoint i(x0,y,z);
+}
+
+
+// Checking section
+// ****************
+bool VertexExtrapolator::point_plane_check(ROOT::Math::XYZPoint point)
+{
+  // within bounds of tracker and correct side.
 }
 
 
