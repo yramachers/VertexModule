@@ -180,12 +180,20 @@ class VertexExtrapolator
   void intersect_line();
   void intersect_helix();
   void intersect_brokenline();
+  double findLowerYBound();
+  double findUpperYBound();
+  std::vector<ROOT::Math::XYZPoint> intersect_helix_plane(Helix3d h, Plane p, int which);
+  std::vector<ROOT::Math::XYZPoint> intersect_helix_mainw(Helix3d h, Plane p);
+  std::vector<ROOT::Math::XYZPoint> intersect_helix_xwall(Helix3d h, Plane p);
+  std::vector<ROOT::Math::XYZPoint> intersect_helix_gveto(Helix3d h, Plane p);
+  ROOT::Math::XYZPoint intersect_line_plane(Line3d l, Plane p);
 
 
 protected:
   void zcheck_line(); // consider wire candidate in z to gveto, still a wire candidate?
   void zcheck_helix(); // consider wire candidate in z to gveto, still a wire candidate?
   void intersect(int which); // action, checks on valid plane and trajectory
+  bool point_plane_check(ROOT::Math::XYZPoint point);
 
 
 public:
