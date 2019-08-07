@@ -39,35 +39,21 @@ std::pair<VertexInfo, std:pair<Ellipse, Ellipse> > VertexExtrapolator::fullverte
 
 
 
-bool VertexExtrapolator::zcheck_line()
-{
-}
-
-bool VertexExtrapolator::zcheck_helix()
-{
-}
-
 void VertexExtrapolator::intersect(int which) // main working method
 {
   switch(which) {
   case 0: // line case
     info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == lf.clid}) - allInfo.begin()); // linefit case
-    if (info.wire_candidate)
-      zcheck_line();
     intersect_line(); // sets all results
     break;
 
   case 1: // helix case
     info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == hf.clid}) - allInfo.begin()); // helixfit case
-    if (info.wire_candidate)
-      zcheck_helix();
     intersect_helix(); // sets all results
     break;
 
   case 2: // broken line case
     info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == blf.clid}) - allInfo.begin()); // brokenlinefit case
-    if (info.wire_candidate)
-      zcheck_line();
     intersect_brokenline(); // sets all results
     break;
   }
@@ -79,20 +65,13 @@ void VertexExtrapolator::intersect(int which) // main working method
 void VertexExtrapolator::intersect_line()
 {
   std::vector<ROOT::Math::XYZPoint> isecs;
-  std::vector<int> idcollection;
-  Line3d current;
 
-  // central line
-  ROOT::Math::XYZVector ubest(1.0, lf.slxy, lf.slxz);
-  ROOT::Math::XYZVector pbest(0.0, lf.ixy, lf.ixz);
-  current.u = ubest;
-  current.point = pbest;
+  std::vector<ROOT::Math::XYZPoint> lc = linecollection(); // lf is known
   if (info.foilcalo.second) { // only if a calo vertex is required
     for (Plane p : allPlanes) {
-      ROOT::Math::XYZPoint intersection = intersect_line_plane(current, p);
-      if (point_plane_check(intersection)) {
+      for (Line3d& current : lc) {
+	ROOT::Math::XYZPoint intersection = intersect_line_plane(current, p);
 	isecs.push_back(intersection);
-	idcollection.push_back(p.planeid);
       }
     }
   }
@@ -103,16 +82,25 @@ void VertexExtrapolator::intersect_line()
     p.planeid = 10; // foil plane
     p.normal = norm;
     p.point  = origin;
-    ROOT::Math::XYZPoint intersection = intersect_line_plane(current, p);
-    if (point_plane_check(intersection)) {
+    for (Line3d& current : lc) {
+      ROOT::Math::XYZPoint intersection = intersect_line_plane(current, p);
       isecs.push_back(intersection);
-      idcollection.push_back(p.planeid);
     }
   }
+  if (isecs.empty()) {
+    // both vertices on wires, empty vertex ellipses
+    spot1.axis1.clear();
+    spot1.axis2.clear();
+    spot2.axis1.clear();
+    spot2.axis2.clear();
+    return; // end here
+  }
+  check_all_intersections(isecs);
+  return;
 }
 
 
-ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d l, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d& l, Plane p)
 {
   double denom = p.normal.Dot(l.u);
   if (denom>0.0) { // not parallel
@@ -128,6 +116,55 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d l, Plane p)
   }
 }
 
+std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::linecollection()
+{
+  ROOT::Math::XYZVector uplusy (1.0, lf.slxy+lf.errslxy, lf.slxz);
+  ROOT::Math::XYZVector uminusy(1.0, lf.slxy-lf.errslxy, lf.slxz);
+  ROOT::Math::XYZVector uplusz (1.0, lf.slxy, lf.slxz+lf.errslxz);
+  ROOT::Math::XYZVector uminusz(1.0, lf.slxy, lf.slxz-lf.errslxz);
+  ROOT::Math::XYZVector pplusy (0.0, lf.ixy+lf.errixy, lf.ixz);
+  ROOT::Math::XYZVector pminusy(0.0, lf.ixy-lf.errixy, lf.ixz);
+  ROOT::Math::XYZVector pplusz (0.0, lf.ixy, lf.ixz+lf.errixz);
+  ROOT::Math::XYZVector pminusz(0.0, lf.ixy, lf.ixz-lf.errixz);
+  std::vector<ROOT::Math::XYZPoint> collection;
+  
+  Line3D current;
+  // Side = 0, negative x
+  //sweep in y
+  current.u     = uplusy;
+  current.point = pplusy;
+  collecton.push_back(current);
+  current.u     = uminusy;
+  current.point = pminusy;
+  collecton.push_back(current);
+
+  //sweep in z
+  current.u     = uplusz;
+  current.point = pplusz;
+  collecton.push_back(current);
+  current.u     = uminusz;
+  current.point = pminusz;
+  collecton.push_back(current);
+
+  // Side = 1, positive x
+  //sweep in y
+  current.u     = uplusy;
+  current.point = pminusy;
+  collecton.push_back(current);
+  current.u     = uminusy;
+  current.point = pplusy;
+  collecton.push_back(current);
+
+  //sweep in z
+  current.u     = uplusz;
+  current.point = pminusz;
+  collecton.push_back(current);
+  current.u     = uminusz;
+  current.point = pplusz;
+  collecton.push_back(current);
+
+  return collection;
+}
 
 
 // Broken Line section
@@ -277,6 +314,29 @@ bool VertexExtrapolator::point_plane_check(ROOT::Math::XYZPoint point)
   // within bounds of tracker and correct side.
 }
 
+void VertexExtrapolator::check_all_intersections(std::vector<ROOT::Math::XYZPoint> isecs) {
+  // in order of side 0, 1
+  // then line errors +-, first in y then in z
+  // then per plane in their order
+  Interval xbounds_back(allPlanes.at(0).point.x(), 0.0);
+  Interval xbounds_front(0.0, allPlanes.at(1).point.x());
+  Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
+  Interval zbound(allPlanes.at(2).point.z(), allPlanes.at(3).point.z());
+
+  if (info.foilcalo.second) { // only if a calo vertex is required
+    int side = info.side;
+    for (unsigned int i=0; i<isecs.size();i+=4) { // read blocks of four intersection points
+      if (side==0) {
+      }
+      else {
+      }
+
+    }
+  }
+
+}
+
+
 double VertexExtrapolator::findLowerYBound() {
   std::vector<double> dummy;
   for (auto val : info.minx)
@@ -336,4 +396,8 @@ bool Interval::overlap(Interval other)
   else return true; // this a subset
 }
 
+bool Interval::contains(double value)
+{
+  return (value <= upper && value>=lower);
+}
 

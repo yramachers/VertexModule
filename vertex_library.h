@@ -33,6 +33,7 @@ struct VertexInfo {
   int clsid;
   // id to link to plane
   int planeid;
+  int side; // tracker side from cluster
 };
 
 
@@ -159,7 +160,8 @@ public:
   double to() {return upper;} // boundary return
   bool empty() {return lower == upper;} // check for empty interval
   bool overlap(Interval other); // return true if overlap exists
-    
+  bool contains(double value); // value in interval?
+  void clear() {lower=0.0; upper = 0.0;} // set empty
 };
 
 
@@ -190,8 +192,6 @@ class VertexExtrapolator
 
 
 protected:
-  void zcheck_line(); // consider wire candidate in z to gveto, still a wire candidate?
-  void zcheck_helix(); // consider wire candidate in z to gveto, still a wire candidate?
   void intersect(int which); // action, checks on valid plane and trajectory
   bool point_plane_check(ROOT::Math::XYZPoint point);
 

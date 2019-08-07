@@ -304,6 +304,8 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
     // for <foil direction, calo direction>
     VertexInfo info = check_on_wire(gg_hits_col);
     info.clsid = entry.get().get_cluster_id();
+    info.side = entry.get().get_hits().at(0).get().get_side();
+
     findmaxmin(info, gg_hits_col);
     all_info.push_back(info);
   }
@@ -317,7 +319,7 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
     // loop over all types and get all available intersections
     for (LineFit lf : onecluster) {
       ve.setTrajectory(lf, all_info);
-      std::pair<VertexInfo, std:pair<Interval, Interval> >  vt = ve.fullvertex();
+      std::pair<VertexInfo, std:pair<Ellipse, Ellipse> >  vt = ve.fullvertex();
     }
   }
   

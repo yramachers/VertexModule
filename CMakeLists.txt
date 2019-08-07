@@ -13,7 +13,7 @@ find_package(ROOT REQUIRED)
 include_directories(.)
 
 # Build a dynamic library from our sources
-add_library(Fitter SHARED vertex_module.h 
+add_library(Vertex SHARED vertex_module.h 
 		   vertex_library.h 
 		   vertex_library.cpp 
 		   vertex_module.cpp)
@@ -22,7 +22,7 @@ target_link_libraries(Vertex PUBLIC Falaise::FalaiseModule ${ROOT_LIBRARIES})
 # Build a dynamic library from our sources for algorithm only
 # required for testing executables.
 include_directories(${ROOT_INCLUDE_DIRS})
-add_library(FitAlgorithm SHARED vertex_library.h 
+add_library(VertexAlgorithm SHARED vertex_library.h 
 			  vertex_library.cpp)
 target_link_libraries(VertexAlgorithm PUBLIC ${ROOT_LIBRARIES})
 
@@ -41,7 +41,7 @@ target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/testing)
 # add test executable
 #include_directories(. testing)
 #add_executable(linetest testing/linetest.cpp)
-#target_link_libraries(linetest PUBLIC Catch FitAlgorithm)
+#target_link_libraries(linetest PUBLIC Catch VertexAlgorithm)
 
 # CTest comand
 #add_test(NAME linetest
