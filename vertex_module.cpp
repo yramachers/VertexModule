@@ -312,15 +312,23 @@ dpp::base_module::process_status vertex_module::process(datatools::things & data
 
   // ready to extrapolate, work with loop over all trj containers, check on wire_candidate via clsid
   VertexExtrapolator ve(planes); // has all the geometry information now
+  // Results
+  std::vector<VertexInfo> filledInfo;
+  std::vector<Rectangle> foilvertices;
+  std::vector<std::vector<Rectangle> > calovertices;
 
   const std::vector<std::vector<LineFit> >* ptr_lf = &(data_record__.get<std::vector<std::vector<LineFit> > >("mylinefits"));
 
   for (auto& onecluster: : *ptr_lf) {
     // loop over all types and get all available intersections
     for (LineFit lf : onecluster) {
-      ve.setTrajectory(lf, all_info);
-      std::pair<VertexInfo, std:pair<Ellipse, Ellipse> >  vt = ve.fullvertex();
+      ve.setTrajectory(lf, all_info); // does the work
+      // Results storage
+      filledInfo.push_back(ve.vertexinfo()); // in order of line fits for every cluster sequentially
+      foilvertices.push_back(ve.onfoil());
+      calovertices.push_back(ve.oncalo());
     }
+    // again for helix fits, then broken line fits
   }
   
   eventCounter++;
@@ -354,7 +362,6 @@ VertexInfo vertex_module::check_on_wire(const sdm::calibrated_tracker_hit::colle
       caloside = true;
   }
 
-  vi.wire_candidate = !(foilside && caloside);
   vi.foilcalo = std::make_pair(foilside, caloside);
 
   return vi;

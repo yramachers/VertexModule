@@ -25,7 +25,6 @@ struct MetaInfo {
 struct VertexInfo {
   // how to extrapolate
   std::pair<bool, bool> foilcalo;
-  bool wire_candidate;
   // making sense of intersection points for helices
   std::vector<MetaInfo> minx
   std::vector<MetaInfo> maxx
@@ -47,12 +46,14 @@ struct Plane {
 };
 
 
-// geometric ellipse struct
-struct Ellipse {
-  Interval axis1;
-  Interval axis2;
+// geometric rectangle struct
+struct Rectangle {
+  Interval axis1; // through centre
+  Interval axis2; // perpendicular
+  double areafraction; // on given plane fraction; interval ]0,1]
   int planeid; // link to plane
   int side; // flags x negative (0) or positive (1)
+  std::pair<int, int> neighbourindex; // indices for fixed allPlanes vector: -1 = none
 };
 
 
@@ -158,42 +159,53 @@ public:
   double midinterval() {return 0.5*(lower+upper);} // mean interval value
   double from() {return lower;} // boundary return
   double to() {return upper;} // boundary return
+  double width() {return fabs(upper - lower);} // how wide
   bool empty() {return lower == upper;} // check for empty interval
   bool overlap(Interval other); // return true if overlap exists
   bool contains(double value); // value in interval?
   void clear() {lower=0.0; upper = 0.0;} // set empty
+  void setbound(double value);
 };
 
 
 class VertexExtrapolator
 {
-  // input some trajectory and retrieve an intersection ellipse
+  // input some trajectory and retrieve an intersection rectangle
   // in form of two intervals as main axes
 
  private:
-  Ellipse spot1;
-  Ellipse spot2;
+  Rectangle foilvertex;
+  std::vector<Rectangle> calovertex;
   LineFit lf;
   HelixFit hf;
   BrokenLineFit blf;
   VertexInfo info;
   std::vector<VertexInfo> allinfo;
   std::vector<Plane> allPlanes;
+
   void intersect_line();
   void intersect_helix();
   void intersect_brokenline();
+  void zcheck(std::vector<ROOT::Math::XYZPoint>& lc, int side);
+  void set_calospot(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, int side);
+  bool point_plane_check_x(ROOT::Math::XYZPoint point, int side);
+  bool point_plane_check_y(ROOT::Math::XYZPoint point, int side);
+  bool point_plane_check_z(ROOT::Math::XYZPoint point, int side);
   double findLowerYBound();
   double findUpperYBound();
+  double mainwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area);
+  double xwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area);
+  double gveto_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_plane(Helix3d h, Plane p, int which);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_mainw(Helix3d h, Plane p);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_xwall(Helix3d h, Plane p);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_gveto(Helix3d h, Plane p);
   ROOT::Math::XYZPoint intersect_line_plane(Line3d l, Plane p);
+  std::vector<ROOT::Math::XYZPoint> linecollection(int side);
 
 
 protected:
   void intersect(int which); // action, checks on valid plane and trajectory
-  bool point_plane_check(ROOT::Math::XYZPoint point);
 
 
 public:
@@ -207,9 +219,11 @@ public:
   void setTrajectory(HelixFit dummy, std::vector<VertexInfo> vi) {hf = dummy; allInfo = vi; intersect(1);}
   void setTrajectory(BrokenLineFit dummy, std::vector<VertexInfo> vi) {blf = dummy; allInfo = vi; intersect(2);}
 
-  // result of intersection, first foil spot, second calo spot
-  std::pair<VertexInfo, std:pair<Ellipse, Ellipse> > fullvertex();
-  // could be empty axes for no intersection
+  // Results from here
+  VertexInfo vertexinfo() {return info;} // all about the vertices
+  Rectangle onfoil() {return foilvertex;} // rectangle struct on foil, empty axes if none
+  std::vector<Rectangle> oncalo() {return calovertex;} // up to three vertices possible on calo walls
+
 };
 
 
