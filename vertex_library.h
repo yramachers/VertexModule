@@ -186,22 +186,23 @@ class VertexExtrapolator
   void intersect_line();
   void intersect_helix();
   void intersect_brokenline();
-  void zcheck(std::vector<ROOT::Math::XYZPoint>& lc, int side);
-  void set_calospot(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, int side);
+  void zcheck(std::vector<Line3d>& lc, int side);
+  void set_calospot(std::vector<Line3d>& lc, Plane p, int side);
   bool point_plane_check_x(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_y(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_z(ROOT::Math::XYZPoint point, int side);
   double findLowerYBound();
   double findUpperYBound();
-  double mainwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area);
-  double xwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area);
-  double gveto_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area);
-  std::vector<ROOT::Math::XYZPoint> intersect_helix_plane(Helix3d h, Plane p, int which);
+  double mainwall_check(std::vector<Line3d>& lc, Plane p, double area);
+  double xwall_check(std::vector<Line3d>& lc, Plane p, double area);
+  double gveto_check(std::vector<Line3d>& lc, Plane p, double area);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_mainw(Helix3d h, Plane p);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_xwall(Helix3d h, Plane p);
   std::vector<ROOT::Math::XYZPoint> intersect_helix_gveto(Helix3d h, Plane p);
   ROOT::Math::XYZPoint intersect_line_plane(Line3d l, Plane p);
-  std::vector<ROOT::Math::XYZPoint> linecollection(int side);
+  ROOT::Math::XYZPoint intersect_helix_plane(Helix3d h, Plane p);
+  std::vector<Line3d> linecollection(int side);
+  std::vector<Helix3d> helixcollection();
 
 
 protected:

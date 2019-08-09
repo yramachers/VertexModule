@@ -56,7 +56,7 @@ void VertexExtrapolator::intersect(int which) // main working method
 void VertexExtrapolator::intersect_line()
 {
   int side = info.side;
-  std::vector<ROOT::Math::XYZPoint> lc = linecollection(side); // lf is known
+  std::vector<Line3d> lc = linecollection(side); // lf is known
 
   // check final calo: gvet; finalizes info.foilcalo.second to true or false
   zcheck(lc, side);
@@ -113,7 +113,7 @@ void VertexExtrapolator::intersect_line()
 }
 
 
-void VertexExtrapolator::set_calospot(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, int side)
+void VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int side)
 {
   // this sets rectangle axes for calovertex, the calorimeter rectangle container
   // depending on which unique plane is intersected by the best fit line
@@ -126,7 +126,7 @@ void VertexExtrapolator::set_calospot(std::vector<ROOT::Math::XYZPoint>& lc, Pla
   // centre point from best fit line
   ROOT::Math::XYZVector ubest(1.0, lf.slxy, lf.slxz);
   ROOT::Math::XYZVector pbest(0.0, lf.ixy, lf.ixz);
-  Line3D best;
+  Line3d best;
   best.u = ubest;
   best.point = pbest;
 
@@ -202,7 +202,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d& l, Plane p
   }
 }
 
-std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::linecollection(int side)
+std::vector<Line3d> VertexExtrapolator::linecollection(int side)
 {
   ROOT::Math::XYZVector uplusy (1.0, lf.slxy+lf.errslxy, lf.slxz);
   ROOT::Math::XYZVector uminusy(1.0, lf.slxy-lf.errslxy, lf.slxz);
@@ -212,9 +212,9 @@ std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::linecollection(int side)
   ROOT::Math::XYZVector pminusy(0.0, lf.ixy-lf.errixy, lf.ixz);
   ROOT::Math::XYZVector pplusz (0.0, lf.ixy, lf.ixz+lf.errixz);
   ROOT::Math::XYZVector pminusz(0.0, lf.ixy, lf.ixz-lf.errixz);
-  std::vector<ROOT::Math::XYZPoint> collection;
+  std::vector<Line3d> collection;
   
-  Line3D current;
+  Line3d current;
   if (side ==0) { // Side = 0, negative x
     //sweep in y
     current.u     = uplusy;
@@ -260,6 +260,24 @@ std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::linecollection(int side)
 // *******************
 void VertexExtrapolator::intersect_brokenline()
 {
+  if (blf.breakpoints.empty()) { // unbroken line
+    lf = blf.linefit1;
+    intersect_line();
+  }
+  else {
+    // to foil
+    lf = blf.linefit1;
+    bool previous_info = info.foilcalo.second;
+    info.foilcalo.second = false; // enforce no extrapolation to calo for linefit1
+    intersect_line();
+    info.foilcalo.second = previous_info;
+    // to calo
+    lf = blf.linefit2;
+    previous_info = info.foilcalo.first;
+    info.foilcalo.first = false; // enforce no extrapolation to foil for linefit2
+    intersect_line();
+    info.foilcalo.first = previous_info;
+  }
 }
 
 
@@ -292,44 +310,78 @@ void VertexExtrapolator::intersect_helix()
       current.charge = 1;
   }
 
-  int which = 0;
-  for (Plane p : allPlanes) {
-    if (p.planeid<2)
-      which = 0; // main wall
-    else if (p.planeid>=2 && p.planeid<4 || p.planeid>=6 && p.planeid<8)
-      which = 1; // xwall
-    else
-      which = 2; // gamma veto
-    std::vector<ROOT::Math::XYZPoint> intersections = intersect_helix_plane(current, p, which);
-    // check intersection
-    if (point_plane_check(intersection)) {
-      isecs.push_back(intersection);
-      idcollection.push_back(p.planeid);
+  // piercing planes from here
+  std::vector<Helix3d> hc = helixcollection(current.charge);
+
+  // check final calo: gvet; finalizes info.foilcalo.second to true or false
+  zcheck_helix(hc, side);
+
+  if (info.foilcalo.second) { // only if a calo vertex is required
+    for (Plane p : allPlanes) {
+      // calo spots - determined by centre fit helix intersecting exactly one calo wall
+      // and left-overs on other planes, if any
+      set_calospot_helix(hc, p, side); 
     }
   }
+  if (info.foilcalo.first) { // only if a foil vertex is required
+  }
+
 }
 
 
-std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_plane(Helix3d h, Plane p, int which)
+std::vector<Helix3d> VertexExtrapolator::helixcollection(int charge)
+{
+  // vary centre y, pitch to get four intersection points around the centre tracing a rectangle like for lines.
+  std::vector<Helix3d> collection;
+  
+  Helix3d current;
+  current.radius = hf.radius; // changes with y-centre
+  current.pitch  = hf.pitch; 
+  current.charge = charge; // all the same charge
+
+  ROOT::Math::XYZVector pplusy(hf.xc, hf.yc + hf.erryc, hf.zc); // centre
+  ROOT::Math::XYZVector pminusy(hf.xc, hf.yc - hf.erryc, hf.zc); // centre
+  ROOT::Math::XYZVector pbest(hf.xc, hf.yc, hf.zc); // centre
+  double pitchup = hf.pitch + errpitch;
+  double pitchdown = hf.pitch - errpitch;
+
+
+  //sweep in y
+  current.point = pplusy;
+  collecton.push_back(current);
+  current.point = pminusy;
+  collecton.push_back(current);
+  
+  //sweep in z
+  current.point = pbest;
+  current.pitch  = pitchup;
+  collecton.push_back(current);
+  current.pitch = pitchdown;
+  collecton.push_back(current);
+  
+  return collection;
+}
+
+
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d h, Plane p)
 {
   ROOT::Math::XYZPoint isec;
-  switch (which) {
-  case 0: 
+  if (p.planeid<2) // main wall
     isec = intersect_helix_mainw(h, p); 
-    break;
-  case 1:
+
+  else if (p.planeid>=2 && p.planeid<4 || p.planeid>=6 && p.planeid<8) // xwall
     isec = intersect_helix_xwall(h, p); // +- y from p.planeid
-    break;
-  case 2:
+
+  else // gveto
     isec = intersect_helix_gveto(h, p); // +- z from p.planeid
-    break;
-  }
+
   return isec;
 }
 
 
 std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane p)
 {
+  // *** sort two points first, only one should come back ***
   std::vector<ROOT::Math::XYZPoint> pointcollection;
   // parameter
   double x0 = p.point.x(); // +-x coordinate of main wall
@@ -356,6 +408,7 @@ std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_mainw(Heli
 
 std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane p)
 {
+  // *** sort two points first, only one should come back ***
   std::vector<ROOT::Math::XYZPoint> pointcollection;
   // parameter
   double y0 = p.point.y(); //  coordinate of main wall
@@ -377,9 +430,8 @@ std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_xwall(Heli
 }
 
 
-std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane p)
 {
-  std::vector<ROOT::Math::XYZPoint> pointcollection;
   // parameter
   double z0 = p.point.y(); // y coordinate of xwall
   double zc = h.point.y(); // helix centre x
@@ -391,14 +443,13 @@ std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_gveto(Heli
   double x  = h.point.x() + r * TMath::Cos(2.0 * TMath::Pi() * t);
   double y  = y.point.y() + r * TMath::Sin(2.0 * TMath::Pi() * t);
   ROOT::Math::XYZPoint i(x,y,z0); // just one point piercing z-plane
-  pointcollection.push_back(i);
-  return pointcollection;
+  return i;
 }
 
 
 // Checking section
 // ****************
-double VertexExtrapolator::mainwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area)
+double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, double area)
 {
   Rectangle spot; // into vector calovertex
   Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
@@ -452,7 +503,7 @@ double VertexExtrapolator::mainwall_check(std::vector<ROOT::Math::XYZPoint>& lc,
 }
 
 
-double VertexExtrapolator::xwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area)
+double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double area)
 {
   Rectangle spot; // into vector calovertex
   Interval zbound(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
@@ -508,7 +559,7 @@ double VertexExtrapolator::xwall_check(std::vector<ROOT::Math::XYZPoint>& lc, Pl
 }
 
 
-double VertexExtrapolator::gveto_check(std::vector<ROOT::Math::XYZPoint>& lc, Plane p, double area)
+double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double area)
 {
   Rectangle spot; // into vector calovertex
   Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
@@ -564,7 +615,7 @@ double VertexExtrapolator::gveto_check(std::vector<ROOT::Math::XYZPoint>& lc, Pl
 }
 
 
-void VertexExtrapolator::zcheck(std::vector<ROOT::Math::XYZPoint>& lc, int side)
+void VertexExtrapolator::zcheck(std::vector<Line3d>& lc, int side)
 {
   Plane pbot = allPlanes.at(4); // same on either side
   Plane ptop = allPlanes.at(5);
@@ -572,6 +623,24 @@ void VertexExtrapolator::zcheck(std::vector<ROOT::Math::XYZPoint>& lc, int side)
   for (Line3d& current : lc) {
     ROOT::Math::XYZPoint intersection_top = intersect_line_plane(current, ptop);
     ROOT::Math::XYZPoint intersection_bot = intersect_line_plane(current, pbot);
+    if (intersection_top.x()>1000.0 &&intersection_top.y()>10000.0 &&intersection_top.z()>10000.0) continue; // no intersection signature
+
+    if (point_plane_check_z(intersection_top, side)) // point overlaps gveto
+      info.foilcalo.second = true; // not on wire in z
+    if (point_plane_check_z(intersection_bot, side)) // point overlaps gveto
+      info.foilcalo.second = true; // not on wire in z
+  }
+}
+
+
+void VertexExtrapolator::zcheck_helix(std::vector<Helix3d>& hc, int side)
+{
+  Plane pbot = allPlanes.at(4); // same on either side
+  Plane ptop = allPlanes.at(5);
+
+  for (Helix3d& current : hc) {
+    ROOT::Math::XYZPoint intersection_top = intersect_helix_plane(current, ptop);
+    ROOT::Math::XYZPoint intersection_bot = intersect_helix_plane(current, pbot);
     if (intersection_top.x()>1000.0 &&intersection_top.y()>10000.0 &&intersection_top.z()>10000.0) continue; // no intersection signature
 
     if (point_plane_check_z(intersection_top, side)) // point overlaps gveto
