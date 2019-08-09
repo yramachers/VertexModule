@@ -302,12 +302,16 @@ void VertexExtrapolator::intersect_helix()
       current.charge = 1; // positron, right curvature
     else if (pbest.y() < upper_bd)
       current.charge = -1; // electron, left curvature
+    else
+      current.charge = 0; // undecided
   }
   if (side == 1) { // front tracker x>0
     if (pbest.y() > lower_bd)
       current.charge = -1;
     else if (pbest.y() < upper_bd)
       current.charge = 1;
+    else
+      current.charge = 0; // undecided
   }
 
   // piercing planes from here
