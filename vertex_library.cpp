@@ -31,21 +31,27 @@ void VertexExtrapolator::intersect(int which) // main working method
 {
   switch(which) {
   case 0: // line case
-    info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == lf.clid}) - allInfo.begin()); // linefit case
-    calovertex.clear();
-    intersect_line(); // sets all results
+    if (std::count_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == lf.clid}) > 0) {
+      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == lf.clid}) - allInfo.begin()); // linefit case
+      calovertex.clear();
+      intersect_line(); // sets all results
+    }
     break;
 
   case 1: // helix case
-    info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == hf.clid}) - allInfo.begin()); // helixfit case
-    calovertex.clear();
-    intersect_helix(); // sets all results
+    if (std::count_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == hf.clid}) > 0) {
+      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == hf.clid}) - allInfo.begin()); // helixfit case
+      calovertex.clear();
+      intersect_helix(); // sets all results
+    }
     break;
 
   case 2: // broken line case
-    info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == blf.clid}) - allInfo.begin()); // brokenlinefit case
-    calovertex.clear();
-    intersect_brokenline(); // sets all results
+    if (std::count_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == blf.clid}) > 0) {
+      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == blf.clid}) - allInfo.begin()); // brokenlinefit case
+      calovertex.clear();
+      intersect_brokenline(); // sets all results
+    }
     break;
   }
   return;
@@ -99,6 +105,7 @@ void VertexExtrapolator::intersect_line()
 
     double original_area = fabs(pplusy.y() - pminusy.y()) * fabs(pplusz.z() - pminusz.z());
     foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
   }
   if ((!info.foilcalo.first) && (!info.foilcalo.second)) {
     // both vertices on wires, empty vertex rectangles
@@ -108,8 +115,8 @@ void VertexExtrapolator::intersect_line()
     foilvertex.side   = -1;
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
     calovertex.clear(); // empty vector
-    return; // end here
   }
+  return; // end here
 }
 
 
@@ -383,17 +390,24 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d h, Plane 
 }
 
 
-std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane p)
+double VertexExtrapolator::Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2) 
+{
+  return TMath::Sqrt((p2-p1).Mag2()); // distance
+}
+
+
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane p)
 {
   // *** sort two points first, only one should come back ***
   std::vector<ROOT::Math::XYZPoint> pointcollection;
+  ROOT::Math::XYZPoint imin;
   // parameter
   double x0 = p.point.x(); // +-x coordinate of main wall
   double xc = h.point.x(); // helix centre x
   double r  = h.radius;
   double arg = (x0 - xc) / r;
-  if (arg>=1)  // not permitted
-    return pointcollection; // empty
+  if (arg>=1)  // not hitting main wall
+    return   ROOT::Math::XYZPoint i(10001.0, 0.0, 0.0); // empty
 
   double pitch = h.pitch;
   double t  =  TMath::Acos(arg);
@@ -404,33 +418,88 @@ std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_mainw(Heli
   double z2 = h.point.z() - pitch * t  / (2.0 * TMath::Pi());
   ROOT::Math::XYZPoint i(x0,y,z);
   pointcollection.push_back(i);
-  ROOT::Math::XYZPoint i2(x0,y2,z2);  // two closest plane piercing points
+  ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
   pointcollection.push_back(i2);
-  return pointcollection;
+  ROOT::Math::XYZPoint i3(x0,y,z2);
+  pointcollection.push_back(i3);
+  ROOT::Math::XYZPoint i4(x0,y2,z2);
+  pointcollection.push_back(i4);
+  // reduce to one
+
+  // pick the closest to the collection of calo-side tracker hits
+  double minDistance = 10002.0; // dummy big
+  std::vector<double> distances;
+  for (auto ipoint : pointcollection) {
+    for (auto mi : info.maxx) { // has to contain layer 8 by definition
+      ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
+      distances.push_back(Pointdistance(ipoint, wirep));
+    }
+    std::vector<double>::iterator mit = std::min_element(distances.begin(), distance.end());
+    if (*mit < minDistance) {
+      minDistance = *mit;
+      imin = ipoint;
+    }
+    distances.clear();
+  }
+
+  return imin;
 }
 
 
-std::vector<ROOT::Math::XYZPoint> VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane p)
 {
   // *** sort two points first, only one should come back ***
   std::vector<ROOT::Math::XYZPoint> pointcollection;
+  ROOT::Math::XYZPoint imin;
   // parameter
-  double y0 = p.point.y(); //  coordinate of main wall
+  double y0 = p.point.y(); //  coordinate of xwall
   double yc = h.point.y(); // helix centre x
   double r  = h.radius;
   double pitch = h.pitch;
   double arg = (y0 - yc);
-  double t  =  TMath::Acos(1/r * TMath::Sqrt(r*r - arg*arg));
+  if (arg / r >= 1)  // not hitting xwall
+    return   ROOT::Math::XYZPoint i(0.0, 10001.0, 0.0); // empty
 
+  double t  =  TMath::Acos(1/r * TMath::Sqrt(r*r - arg*arg));
   double x  = h.point.x() + TMath::Sqrt(r*r - arg*arg);
   double x2 = h.point.x() - TMath::Sqrt(r*r - arg*arg);
   double z  = h.point.z() + pitch * t / (2.0 * TMath::Pi());
   double z2 = h.point.z() - pitch * t / (2.0 * TMath::Pi());
-  ROOT::Math::XYZPoint i(x,y0,z); // two closest plane piercing points
-  ROOT::Math::XYZPoint i2(x2,y0,z2);
+  ROOT::Math::XYZPoint i(x,y0,z); // four piercing points
+  ROOT::Math::XYZPoint i2(x2,y0,z);
+  ROOT::Math::XYZPoint i3(x,y0,z2);
+  ROOT::Math::XYZPoint i4(x2,y0,z2);
   pointcollection.push_back(i);
   pointcollection.push_back(i2);
-  return pointcollection;
+  pointcollection.push_back(i3);
+  pointcollection.push_back(i4);
+  // reduce to one
+  // pick the closest to the collection of xwall-side tracker hits
+  double minDistance = 10002.0; // dummy big
+  std::vector<double> distances;
+  for (auto ipoint : pointcollection) {
+    // check on extreme row presence first - one must be present by definition
+    if (std::count_if(info.maxy.begin(), info.maxy.end(), [](const MetaInfo& mi){return mi.row == 112}) > 0) {
+      for (auto mi : info.maxy) {
+	ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
+	distances.push_back(Pointdistance(ipoint, wirep));
+      }
+    }
+    else {
+      for (auto mi : info.miny) {
+	ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
+	distances.push_back(Pointdistance(ipoint, wirep));
+      }
+    }
+    std::vector<double>::iterator mit = std::min_element(distances.begin(), distance.end());
+    if (*mit < minDistance) {
+      minDistance = *mit;
+      imin = ipoint;
+    }
+    distances.clear();
+  }
+  
+  return imin;
 }
 
 
@@ -443,7 +512,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane 
   double pitch = h.pitch;
   double t = (z0 - zc) / pitch;
   if (t>=1)  // prevent full or more circle spirals to hit z plane
-    return pointcollection; // empty
+    return   ROOT::Math::XYZPoint i(0.0, 0.0, 10001.0); // empty
   double x  = h.point.x() + r * TMath::Cos(2.0 * TMath::Pi() * t);
   double y  = y.point.y() + r * TMath::Sin(2.0 * TMath::Pi() * t);
   ROOT::Math::XYZPoint i(x,y,z0); // just one point piercing z-plane
@@ -645,12 +714,14 @@ void VertexExtrapolator::zcheck_helix(std::vector<Helix3d>& hc, int side)
   for (Helix3d& current : hc) {
     ROOT::Math::XYZPoint intersection_top = intersect_helix_plane(current, ptop);
     ROOT::Math::XYZPoint intersection_bot = intersect_helix_plane(current, pbot);
-    if (intersection_top.x()>1000.0 &&intersection_top.y()>10000.0 &&intersection_top.z()>10000.0) continue; // no intersection signature
-
-    if (point_plane_check_z(intersection_top, side)) // point overlaps gveto
-      info.foilcalo.second = true; // not on wire in z
-    if (point_plane_check_z(intersection_bot, side)) // point overlaps gveto
-      info.foilcalo.second = true; // not on wire in z
+    if (intersection_top.z() < 10001.0) { // intersection signature
+      if (point_plane_check_z(intersection_top, side)) // point overlaps gveto
+	info.foilcalo.second = true; // not on wire in z
+    }
+    else if (intersection_bot.z()<10001.0) { // intersection signature
+      if (point_plane_check_z(intersection_bot, side)) // point overlaps gveto
+	info.foilcalo.second = true; // not on wire in z
+    }
   }
 }
 

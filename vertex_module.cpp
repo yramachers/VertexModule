@@ -373,20 +373,23 @@ void vertex_module::findmaxmin(VertexInfo& vi, const sdm::calibrated_tracker_hit
   // information required for helices to determine valid 
   // plane intersection points and charge from curvature if possible
   MetaInfo mi;
-  std::vector<int> dummy
+  std::vector<int> xdummy
+  std::vector<int> ydummy
   for (auto hit_handle : data) { 
     const sdm::calibrated_tracker_hit & hit = data.get();
-    dummy.push_back(hit.get_layer()); // store x layer [0-8]
+    xdummy.push_back(hit.get_layer()); // store x layer [0-8]
+    ydummy.push_back(hit.get_row()); // store y row [0-112]
   }
-  std::vector<int>::iterator maxit = std::max_element(dummy.begin(), dummy.end());
-  std::vector<int>::iterator minit = std::min_element(dummy.begin(), dummy.end());
+  // for x
+  std::vector<int>::iterator maxit = std::max_element(xdummy.begin(), xdummy.end());
+  std::vector<int>::iterator minit = std::min_element(xdummy.begin(), xdummy.end());
   int min = *minit; // search target value
   int max = *maxit; // search target value
-  int mymincount = (int) std::count(dummy.begin(), dummy.end(), min);
-  int mymaxcount = (int) std::count(dummy.begin(), dummy.end(), max);
+  int mymincount = (int) std::count(xdummy.begin(), xdummy.end(), min);
+  int mymaxcount = (int) std::count(xdummy.begin(), xdummy.end(), max);
   int pos;
   for (int i=0;i<mymincount;i++) { // finds all min layer value entries
-    pos = minit - dummy.begin();
+    pos = minit - xdummy.begin();
     mi.hitid  = data.at(pos).get().get_id();
     mi.side   = data.at(pos).get().get_side();
     mi.row    = data.at(pos).get().get_row();
@@ -396,10 +399,10 @@ void vertex_module::findmaxmin(VertexInfo& vi, const sdm::calibrated_tracker_hit
     mi.zcoord = data.at(pos).get().get_z();
     vi.minx.push_back(mi);
     ++minit;
-    it = std::find(minit, dummy.end(), min);
+    it = std::find(minit, xdummy.end(), min);
   }
   for (int i=0;i<mymaxcount;i++) { // finds all max layer value entries
-    pos = maxit - dummy.begin();
+    pos = maxit - xdummy.begin();
     mi.hitid  = data.at(pos).get().get_id();
     mi.side   = data.at(pos).get().get_side();
     mi.row    = data.at(pos).get().get_row();
@@ -409,7 +412,42 @@ void vertex_module::findmaxmin(VertexInfo& vi, const sdm::calibrated_tracker_hit
     mi.zcoord = data.at(pos).get().get_z();
     vi.maxx.push_back(mi);
     ++maxit;
-    it = std::find(maxit, dummy.end(), max);
+    it = std::find(maxit, xdummy.end(), max);
+  }
+
+  // for y
+  maxit = std::max_element(ydummy.begin(), ydummy.end());
+  minit = std::min_element(ydummy.begin(), ydummy.end());
+  min = *minit; // search target value
+  max = *maxit; // search target value
+  mymincount = (int) std::count(ydummy.begin(), ydummy.end(), min);
+  mymaxcount = (int) std::count(ydummy.begin(), ydummy.end(), max);
+
+  for (int i=0;i<mymincount;i++) { // finds all min row value entries
+    pos = minit - ydummy.begin();
+    mi.hitid  = data.at(pos).get().get_id();
+    mi.side   = data.at(pos).get().get_side();
+    mi.row    = data.at(pos).get().get_row();
+    mi.column = data.at(pos).get().get_layer();
+    mi.wirex  = data.at(pos).get().get_x();
+    mi.wirey  = data.at(pos).get().get_y();
+    mi.zcoord = data.at(pos).get().get_z();
+    vi.miny.push_back(mi);
+    ++minit;
+    it = std::find(minit, ydummy.end(), min);
+  }
+  for (int i=0;i<mymaxcount;i++) { // finds all max row value entries
+    pos = maxit - ydummy.begin();
+    mi.hitid  = data.at(pos).get().get_id();
+    mi.side   = data.at(pos).get().get_side();
+    mi.row    = data.at(pos).get().get_row();
+    mi.column = data.at(pos).get().get_layer();
+    mi.wirex  = data.at(pos).get().get_x();
+    mi.wirey  = data.at(pos).get().get_y();
+    mi.zcoord = data.at(pos).get().get_z();
+    vi.maxy.push_back(mi);
+    ++maxit;
+    it = std::find(maxit, ydummy.end(), max);
   }
 
 }

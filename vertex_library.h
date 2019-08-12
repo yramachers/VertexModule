@@ -28,6 +28,8 @@ struct VertexInfo {
   // making sense of intersection points for helices
   std::vector<MetaInfo> minx
   std::vector<MetaInfo> maxx
+  std::vector<MetaInfo> miny
+  std::vector<MetaInfo> maxy
   // id to link to trajectory solution
   int clsid;
   // id to link to plane
@@ -213,7 +215,7 @@ public:
   
   VertexExtrapolator(); // Default Constructor
   VertexExtrapolator(std::vector<Plane> pl); // main Constructor
-  ~VertexExtrapolator() {allPlanes.clear(); allInfo.clear();}
+  ~VertexExtrapolator() {allPlanes.clear(); allInfo.clear(); calovertex.clear();}
   
   // signal data input and run all intersections
   void setTrajectory(LineFit dummy, std::vector<VertexInfo> vi) {lf = dummy; allInfo = vi; intersect(0);}
