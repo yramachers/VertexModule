@@ -32,8 +32,6 @@ struct VertexInfo {
   std::vector<MetaInfo> maxy
   // id to link to trajectory solution
   int clsid;
-  // id to link to plane
-  int planeid;
   int side; // tracker side from cluster
 };
 
