@@ -19,7 +19,7 @@ this inevitably does not work. This is hence not(!) a working Falaise module.
 
 ## Description
 
-Add to an flreconstruct pipeline to extrapolate trajectories to th efoil and calorimeter walls in order to obtain vertex areas. To build it, do
+Add to an flreconstruct pipeline to extrapolate trajectories to the foil and calorimeter walls in order to obtain vertex areas. To build it, do
 
 ``` console
 $ ls
@@ -60,7 +60,7 @@ $ flreconstruct -i /path/to/input.brio -p ve.conf
 ## Implementation
 Given a set of fitted models, lines, helices and broken line models, this module obtains the border planes of the inside of the calorimeter walls and the foil and extrapolates the models to those planes. That results in intersection points which form a vertex region. Here the region is assumed conservatively to be a rectangle as opposed to an ellipse. This simplifies the vertex area geometry and results from the assumption of error independence of perpendicular fit model parameters. The latter is considered conservative, increasing the vertex area, i.e. the places where the true vertex may be, to a rectangle that includes the expected error ellipse.
 
-The difficulty with vertex extrapolation is less the intersection calculation of a model with a plane but the possibility that the vertex area may touch up to three calorimeter planes, if for instance the best fit points towards a box corner. In that case, the extrapolated error variations of the model may well touch different plane to the left and right and again other planes higher and lower than the centre intersection point. All these areas are valid vertex areas even if they are on different calorimeter planes. That complicates matters a little.
+The difficulty with vertex extrapolation is less the intersection calculation of a model with a plane but the possibility that the vertex area may touch up to three calorimeter planes, if for instance the best fit points towards a box corner. In that case, the extrapolated error variations of the model may well touch different planes to the left and right and again other planes higher and lower than the centre intersection point. All these areas are valid vertex areas even if they are on different calorimeter planes. That complicates matters a little.
 
 Another item of consideration is the fundamental difference between line models and helix models. The former can by definition only show a unique intersection point with a valid calorimeter wall. All other walls will be pierced outside the defined tracker limits. Helices, however, can have up to four permissible intersections. Finding the correct one is hence an additional process.
 
