@@ -9,6 +9,35 @@
 #include <Math/Point3D.h>
 #include <Math/Vector3D.h>
 
+class Interval
+{
+  // simple interval mostly for convenience
+  // on checking pairs of doubles
+  // and interval overlap
+private:
+  double lower;
+  double upper;
+  
+  
+protected:
+
+public:
+  
+  Interval(); // Default Constructor, not used
+  Interval(double s, double e); // Constructor with lower and upper limit
+  
+  double midinterval() {return 0.5*(lower+upper);} // mean interval value
+  double from() {return lower;} // boundary return
+  double to() {return upper;} // boundary return
+  double width() {return fabs(upper - lower);} // how wide
+  bool empty() {return lower == upper;} // check for empty interval
+  bool overlap(Interval other); // return true if overlap exists
+  bool contains(double value); // value in interval?
+  void clear() {lower=0.0; upper = 0.0;} // set empty
+  void setbound(double value);
+};
+
+
 // geiger data store
 struct MetaInfo {
   // geiger hit info
@@ -26,10 +55,10 @@ struct VertexInfo {
   // how to extrapolate
   std::pair<bool, bool> foilcalo;
   // making sense of intersection points for helices
-  std::vector<MetaInfo> minx
-  std::vector<MetaInfo> maxx
-  std::vector<MetaInfo> miny
-  std::vector<MetaInfo> maxy
+  std::vector<MetaInfo> minx;
+  std::vector<MetaInfo> maxx;
+  std::vector<MetaInfo> miny;
+  std::vector<MetaInfo> maxy;
   // id to link to trajectory solution
   int clsid;
   int side; // tracker side from cluster
@@ -139,35 +168,6 @@ struct BrokenLineFit {
   int clid;
 };
 
-class Interval
-{
-  // simple interval mostly for convenience
-  // on checking pairs of doubles
-  // and interval overlap
-private:
-  double lower;
-  double upper;
-  
-  
-protected:
-
-public:
-  
-  Interval(); // Default Constructor, not used
-  Interval(double s, double e); // Constructor with lower and upper limit
-  
-  double midinterval() {return 0.5*(lower+upper);} // mean interval value
-  double from() {return lower;} // boundary return
-  double to() {return upper;} // boundary return
-  double width() {return fabs(upper - lower);} // how wide
-  bool empty() {return lower == upper;} // check for empty interval
-  bool overlap(Interval other); // return true if overlap exists
-  bool contains(double value); // value in interval?
-  void clear() {lower=0.0; upper = 0.0;} // set empty
-  void setbound(double value);
-};
-
-
 class VertexExtrapolator
 {
   // input some trajectory and retrieve an intersection rectangle
@@ -180,29 +180,35 @@ class VertexExtrapolator
   HelixFit hf;
   BrokenLineFit blf;
   VertexInfo info;
-  std::vector<VertexInfo> allinfo;
+  std::vector<VertexInfo> allInfo;
   std::vector<Plane> allPlanes;
 
   void intersect_line();
   void intersect_helix();
   void intersect_brokenline();
   void zcheck(std::vector<Line3d>& lc, int side);
+  void zcheck_helix(std::vector<Helix3d>& hc, int side);
   void set_calospot(std::vector<Line3d>& lc, Plane p, int side);
+  void set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side);
   bool point_plane_check_x(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_y(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_z(ROOT::Math::XYZPoint point, int side);
   double findLowerYBound();
   double findUpperYBound();
+  double Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2);
   double mainwall_check(std::vector<Line3d>& lc, Plane p, double area);
   double xwall_check(std::vector<Line3d>& lc, Plane p, double area);
   double gveto_check(std::vector<Line3d>& lc, Plane p, double area);
-  std::vector<ROOT::Math::XYZPoint> intersect_helix_mainw(Helix3d h, Plane p);
-  std::vector<ROOT::Math::XYZPoint> intersect_helix_xwall(Helix3d h, Plane p);
-  std::vector<ROOT::Math::XYZPoint> intersect_helix_gveto(Helix3d h, Plane p);
-  ROOT::Math::XYZPoint intersect_line_plane(Line3d l, Plane p);
-  ROOT::Math::XYZPoint intersect_helix_plane(Helix3d h, Plane p);
+  double mainwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area);
+  double xwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area);
+  double gveto_check_helix(std::vector<Helix3d>& hc, Plane p, double area);
+  ROOT::Math::XYZPoint intersect_helix_mainw(Helix3d& h, Plane p);
+  ROOT::Math::XYZPoint intersect_helix_xwall(Helix3d& h, Plane p);
+  ROOT::Math::XYZPoint intersect_helix_gveto(Helix3d& h, Plane p);
+  ROOT::Math::XYZPoint intersect_line_plane(Line3d& l, Plane p);
+  ROOT::Math::XYZPoint intersect_helix_plane(Helix3d& h, Plane p);
   std::vector<Line3d> linecollection(int side);
-  std::vector<Helix3d> helixcollection();
+  std::vector<Helix3d> helixcollection(int charge);
 
 
 protected:
@@ -221,7 +227,6 @@ public:
   void setTrajectory(BrokenLineFit dummy, std::vector<VertexInfo> vi) {blf = dummy; allInfo = vi; intersect(2);}
 
   // Results from here
-  VertexInfo vertexinfo() {return info;} // all about the vertices
   Rectangle onfoil() {return foilvertex;} // rectangle struct on foil, empty axes if none
   std::vector<Rectangle> oncalo() {return calovertex;} // up to three vertices possible on calo walls
 

@@ -39,12 +39,12 @@ add_library(Catch testing/catch-main.cpp)
 target_include_directories(Catch INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/testing)
 
 # add test executable
-#include_directories(. testing)
-#add_executable(vfroml testing/vfroml.cpp)
-#target_link_libraries(vfroml PUBLIC Catch VertexAlgorithm)
+include_directories(. testing)
+add_executable(vfroml testing/vfroml.cpp)
+target_link_libraries(vfroml PUBLIC Catch VertexAlgorithm)
 
 # CTest comand
-#add_test(NAME vfroml
-#  COMMAND vfroml -s
-#)
+add_test(NAME vfroml
+  COMMAND vfroml -s
+)
 

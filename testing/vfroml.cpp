@@ -80,7 +80,7 @@ std::vector<Plane> make_planes() {
   Plane xwall_frontl;
   xwall_frontl.planeid = ++whichcalo;
   xwall_frontl.side = side;
-  xwall_frontl.normal = norm7
+  xwall_frontl.normal = norm7;
   xwall_frontl.point = p7;
   Plane xwall_frontr;
   xwall_frontr.planeid = ++whichcalo;
@@ -121,12 +121,14 @@ LineFit lineA(VertexInfo& vi) { // artificial line fit solution
   lf.ixy = 0.0;
   lf.ixz = 0.0; // intercept origin
   lf.slxy = 1.0;
-  lf.slxz = 1.0; // diagonal up in y and z
+  lf.slxz = 0.0; // diagonal up in y
   lf.errixy = 0.5;
   lf.errixz = 0.5; // half in intercept y, z
   lf.errslxy = 0.2; // slopes [0.8, 1.2]
   lf.errslxz = 0.2; // 20% error in y. z slopes
   lf.status = 0;
+  lf.clid = 1;
+  vi.clsid = 1; // same clsid as hook
   return lf;
 }
 
@@ -142,9 +144,6 @@ int check_lineA(){
   ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
 
   // Results
-  vi = ve.vertexinfo();
-  std::cout << "VertexInfo: (" << foilcalo.first << ", " << foilcalo.second << ") " << std::endl;
-
   Rectangle fvertex = ve.onfoil();
   std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
   std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;

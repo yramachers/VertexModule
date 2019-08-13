@@ -16,7 +16,7 @@
 VertexExtrapolator::VertexExtrapolator()
 {
   allInfo.clear();
-  allPlanes.clear()
+  allPlanes.clear();
 }
 
 // main constructor
@@ -29,26 +29,29 @@ VertexExtrapolator::VertexExtrapolator(std::vector<Plane> pl)
 
 void VertexExtrapolator::intersect(int which) // main working method
 {
+  int xlf = lf.clid;
+  int xhf = hf.clid;
+  int xblf = blf.clid;
   switch(which) {
   case 0: // line case
-    if (std::count_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == lf.clid}) > 0) {
-      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == lf.clid}) - allInfo.begin()); // linefit case
+    if (std::count_if(allInfo.begin(), allInfo.end(), [xlf](const VertexInfo& vi){return vi.clsid == xlf;}) > 0) {
+      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [xlf](const VertexInfo& vi){return vi.clsid == xlf;}) - allInfo.begin()); // linefit case
       calovertex.clear();
       intersect_line(); // sets all results
     }
     break;
 
   case 1: // helix case
-    if (std::count_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == hf.clid}) > 0) {
-      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == hf.clid}) - allInfo.begin()); // helixfit case
+    if (std::count_if(allInfo.begin(), allInfo.end(), [xhf](const VertexInfo& vi){return vi.clsid == xhf;}) > 0) {
+      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [xhf](const VertexInfo& vi){return vi.clsid == xhf;}) - allInfo.begin()); // helixfit case
       calovertex.clear();
       intersect_helix(); // sets all results
     }
     break;
 
   case 2: // broken line case
-    if (std::count_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == blf.clid}) > 0) {
-      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [](const VertexInfo& vi){return vi.clsid == blf.clid}) - allInfo.begin()); // brokenlinefit case
+    if (std::count_if(allInfo.begin(), allInfo.end(), [xblf](const VertexInfo& vi){return vi.clsid == xblf;}) > 0) {
+      info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [xblf](const VertexInfo& vi){return vi.clsid == xblf;}) - allInfo.begin()); // brokenlinefit case
       calovertex.clear();
       intersect_brokenline(); // sets all results
     }
@@ -66,6 +69,7 @@ void VertexExtrapolator::intersect_line()
 
   // check final calo: gvet; finalizes info.foilcalo.second to true or false
   zcheck(lc, side);
+  //  std::cout << "after zcheck, foilcalo is (" << info.foilcalo.first << ", " << info.foilcalo.second << ")" << std::endl;
 
   if (info.foilcalo.second) { // only if a calo vertex is required
     for (Plane p : allPlanes) {
@@ -77,10 +81,10 @@ void VertexExtrapolator::intersect_line()
   if (info.foilcalo.first) { // only if a foil vertex is required
     foilvertex.planeid = 10; // foil id
     foilvertex.side = 1; // irrelevant here
-    ROOT::Math::XYZVector pplusy (0.0, lf.ixy+lf.errixy, lf.ixz); // intercepts are
-    ROOT::Math::XYZVector pminusy(0.0, lf.ixy-lf.errixy, lf.ixz); // the intersection
-    ROOT::Math::XYZVector pplusz (0.0, lf.ixy, lf.ixz+lf.errixz); // points by definition
-    ROOT::Math::XYZVector pminusz(0.0, lf.ixy, lf.ixz-lf.errixz); // with foil at x=0 origin.
+    ROOT::Math::XYZPoint pplusy (0.0, lf.ixy+lf.errixy, lf.ixz); // intercepts are
+    ROOT::Math::XYZPoint pminusy(0.0, lf.ixy-lf.errixy, lf.ixz); // the intersection
+    ROOT::Math::XYZPoint pplusz (0.0, lf.ixy, lf.ixz+lf.errixz); // points by definition
+    ROOT::Math::XYZPoint pminusz(0.0, lf.ixy, lf.ixz-lf.errixz); // with foil at x=0 origin.
     
     Interval ybounds(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
     Interval zbounds(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
@@ -132,9 +136,9 @@ void VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int side
 
   // centre point from best fit line
   ROOT::Math::XYZVector ubest(1.0, lf.slxy, lf.slxz);
-  ROOT::Math::XYZVector pbest(0.0, lf.ixy, lf.ixz);
+  ROOT::Math::XYZPoint pbest(0.0, lf.ixy, lf.ixz);
   Line3d best;
-  best.u = ubest;
+  best.u = ubest.Unit();
   best.point = pbest;
 
   if (side == p.side) { // only planes on the correct side
@@ -190,21 +194,27 @@ void VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int side
       }
     }
   } // correct side, otherwise do nothing
+  //  std::cout << "wrong plane side, returns." << std::endl;
 }
 
 
 ROOT::Math::XYZPoint VertexExtrapolator::intersect_line_plane(Line3d& l, Plane p)
 {
+  ROOT::Math::XYZPoint i;
   double denom = p.normal.Dot(l.u);
-  if (denom>0.0) { // not parallel
-    double u = (p.normal.Dot(p.point) - p.normal.Dot(l.point)) / denom;
-    ROOT::Math::XYZPoint i(l.point.x() + u * l.u.x(),
-			   l.point.y() + u * l.u.y(),
-			   l.point.z() + u * l.u.z());
+  // std::cout << "Got p normal: (" << p.normal.x() << ", " << p.normal.y() << ", " << p.normal.z() << ")" << std::endl;
+  // std::cout << "Got line u: (" << l.u.x() << ", " << l.u.y() << ", " << l.u.z() << ")" << std::endl;
+  // std::cout << "denominator = " << denom << std::endl;
+  if (fabs(denom)>0.0) { // not parallel
+    double u = ((p.point - l.point).Dot(p.normal)) / denom;
+    i.SetXYZ(l.point.x() + u * l.u.x(),
+	     l.point.y() + u * l.u.y(),
+	     l.point.z() + u * l.u.z());
+    //    std::cout << "intersection point: (" << i.x() << ", " << i.y() << ", " << i.z() << ")" << std::endl;
     return i; // just the one intersection point
   }
   else { 
-    ROOT::Math::XYZPoint i(1001.0,10001.0,10001.0); // no intersection signature
+    i.SetXYZ(1001.0,10001.0,10001.0); // no intersection signature
     return i;
   }
 }
@@ -215,48 +225,48 @@ std::vector<Line3d> VertexExtrapolator::linecollection(int side)
   ROOT::Math::XYZVector uminusy(1.0, lf.slxy-lf.errslxy, lf.slxz);
   ROOT::Math::XYZVector uplusz (1.0, lf.slxy, lf.slxz+lf.errslxz);
   ROOT::Math::XYZVector uminusz(1.0, lf.slxy, lf.slxz-lf.errslxz);
-  ROOT::Math::XYZVector pplusy (0.0, lf.ixy+lf.errixy, lf.ixz);
-  ROOT::Math::XYZVector pminusy(0.0, lf.ixy-lf.errixy, lf.ixz);
-  ROOT::Math::XYZVector pplusz (0.0, lf.ixy, lf.ixz+lf.errixz);
-  ROOT::Math::XYZVector pminusz(0.0, lf.ixy, lf.ixz-lf.errixz);
+  ROOT::Math::XYZPoint pplusy (0.0, lf.ixy+lf.errixy, lf.ixz);
+  ROOT::Math::XYZPoint pminusy(0.0, lf.ixy-lf.errixy, lf.ixz);
+  ROOT::Math::XYZPoint pplusz (0.0, lf.ixy, lf.ixz+lf.errixz);
+  ROOT::Math::XYZPoint pminusz(0.0, lf.ixy, lf.ixz-lf.errixz);
   std::vector<Line3d> collection;
   
   Line3d current;
   if (side ==0) { // Side = 0, negative x
     //sweep in y
-    current.u     = uplusy;
+    current.u     = uplusy.Unit();
     current.point = pplusy;
-    collecton.push_back(current);
-    current.u     = uminusy;
+    collection.push_back(current);
+    current.u     = uminusy.Unit();
     current.point = pminusy;
-    collecton.push_back(current);
+    collection.push_back(current);
     
     //sweep in z
-    current.u     = uplusz;
+    current.u     = uplusz.Unit();
     current.point = pplusz;
-    collecton.push_back(current);
-    current.u     = uminusz;
+    collection.push_back(current);
+    current.u     = uminusz.Unit();
     current.point = pminusz;
-    collecton.push_back(current);
+    collection.push_back(current);
     
     return collection;
   }
   else { // Side = 1, positive x
     //sweep in y
-    current.u     = uplusy;
+    current.u     = uplusy.Unit();
     current.point = pminusy;
-    collecton.push_back(current);
-    current.u     = uminusy;
+    collection.push_back(current);
+    current.u     = uminusy.Unit();
     current.point = pplusy;
-    collecton.push_back(current);
+    collection.push_back(current);
     
     //sweep in z
-    current.u     = uplusz;
+    current.u     = uplusz.Unit();
     current.point = pminusz;
-    collecton.push_back(current);
-    current.u     = uminusz;
+    collection.push_back(current);
+    current.u     = uminusz.Unit();
     current.point = pplusz;
-    collecton.push_back(current);
+    collection.push_back(current);
     
     return collection;
   }
@@ -296,7 +306,7 @@ void VertexExtrapolator::intersect_helix()
   std::vector<ROOT::Math::XYZPoint> isecs;
   std::vector<int> idcollection;
   Helix3d current;
-  ROOT::Math::XYZVector pbest(hf.xc, hf.yc, hf.zc); // centre
+  ROOT::Math::XYZPoint pbest(hf.xc, hf.yc, hf.zc); // centre
   current.point  = pbest;
   current.radius = hf.radius;
   current.pitch  = hf.pitch;
@@ -353,22 +363,22 @@ std::vector<Helix3d> VertexExtrapolator::helixcollection(int charge)
   ROOT::Math::XYZPoint pplusy(hf.xc, hf.yc + hf.erryc, hf.zc); // centre
   ROOT::Math::XYZPoint pminusy(hf.xc, hf.yc - hf.erryc, hf.zc); // centre
   ROOT::Math::XYZPoint pbest(hf.xc, hf.yc, hf.zc); // centre
-  double pitchup = hf.pitch + errpitch;
-  double pitchdown = hf.pitch - errpitch;
+  double pitchup = hf.pitch + hf.errpitch;
+  double pitchdown = hf.pitch - hf.errpitch;
 
 
   //sweep in y
   current.point = pplusy;
-  collecton.push_back(current);
+  collection.push_back(current);
   current.point = pminusy;
-  collecton.push_back(current);
+  collection.push_back(current);
   
   //sweep in z
   current.point = pbest;
   current.pitch  = pitchup;
-  collecton.push_back(current);
+  collection.push_back(current);
   current.pitch = pitchdown;
-  collecton.push_back(current);
+  collection.push_back(current);
   
   return collection;
 }
@@ -385,7 +395,7 @@ void VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p, i
   Interval xbound_front(0.0, allPlanes.at(1).point.x());
 
   // centre point from best fit helix
-  ROOT::Math::XYZPoint pbest(hf.xc(), hf.yc(), hf.zc());
+  ROOT::Math::XYZPoint pbest(hf.xc, hf.yc, hf.zc);
   Helix3d best;
   best.point = pbest;
   best.pitch = hf.pitch;
@@ -448,7 +458,7 @@ void VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p, i
 }
 
 
-ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d h, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d& h, Plane p)
 {
   ROOT::Math::XYZPoint isec;
   if (p.planeid<2) // main wall
@@ -470,7 +480,7 @@ double VertexExtrapolator::Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XY
 }
 
 
-ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d& h, Plane p)
 {
   // *** sort two points first, only one should come back ***
   std::vector<ROOT::Math::XYZPoint> pointcollection;
@@ -481,10 +491,10 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane 
   double r  = h.radius;
   double arg = (x0 - xc) / r;
   if (arg>=1)  // not hitting main wall
-    return   ROOT::Math::XYZPoint i(10001.0, 0.0, 0.0); // empty
+    return imin.SetXYZ(10001.0, 0.0, 0.0); // empty
 
   double pitch = h.pitch;
-  double t  =  TMath::Acos(arg);
+  double t  =  TMath::ACos(arg);
 
   double y  = h.point.y() + TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
   double y2 = h.point.y() - TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
@@ -508,7 +518,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane 
       ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
       distances.push_back(Pointdistance(ipoint, wirep));
     }
-    std::vector<double>::iterator mit = std::min_element(distances.begin(), distance.end());
+    std::vector<double>::iterator mit = std::min_element(distances.begin(), distances.end());
     if (*mit < minDistance) {
       minDistance = *mit;
       imin = ipoint;
@@ -520,7 +530,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d h, Plane 
 }
 
 
-ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d& h, Plane p)
 {
   // *** sort two points first, only one should come back ***
   std::vector<ROOT::Math::XYZPoint> pointcollection;
@@ -532,9 +542,9 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane 
   double pitch = h.pitch;
   double arg = (y0 - yc);
   if (arg / r >= 1)  // not hitting xwall
-    return   ROOT::Math::XYZPoint i(0.0, 10001.0, 0.0); // empty
+    return imin.SetXYZ(0.0, 10001.0, 0.0); // empty
 
-  double t  =  TMath::Acos(1/r * TMath::Sqrt(r*r - arg*arg));
+  double t  =  TMath::ACos(1/r * TMath::Sqrt(r*r - arg*arg));
   double x  = h.point.x() + TMath::Sqrt(r*r - arg*arg);
   double x2 = h.point.x() - TMath::Sqrt(r*r - arg*arg);
   double z  = h.point.z() + pitch * t / (2.0 * TMath::Pi());
@@ -553,7 +563,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane 
   std::vector<double> distances;
   for (auto ipoint : pointcollection) {
     // check on extreme row presence first - one must be present by definition
-    if (std::count_if(info.maxy.begin(), info.maxy.end(), [](const MetaInfo& mi){return mi.row == 112}) > 0) {
+    if (std::count_if(info.maxy.begin(), info.maxy.end(), [](const MetaInfo& mi){return mi.row == 112;}) > 0) {
       for (auto mi : info.maxy) {
 	ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
 	distances.push_back(Pointdistance(ipoint, wirep));
@@ -565,7 +575,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane 
 	distances.push_back(Pointdistance(ipoint, wirep));
       }
     }
-    std::vector<double>::iterator mit = std::min_element(distances.begin(), distance.end());
+    std::vector<double>::iterator mit = std::min_element(distances.begin(), distances.end());
     if (*mit < minDistance) {
       minDistance = *mit;
       imin = ipoint;
@@ -577,8 +587,9 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d h, Plane 
 }
 
 
-ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane p)
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d& h, Plane p)
 {
+  ROOT::Math::XYZPoint i; // just one point piercing z-plane
   // parameter
   double z0 = p.point.y(); // y coordinate of xwall
   double zc = h.point.y(); // helix centre x
@@ -586,11 +597,11 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane 
   double pitch = h.pitch;
   double t = (z0 - zc) / pitch;
   if (t>=1)  // prevent full or more circle spirals to hit z plane
-    return ROOT::Math::XYZPoint i(0.0, 0.0, 10001.0); // empty
+    return i.SetXYZ(0.0, 0.0, 10001.0); // empty
   double x  = h.point.x() + r * TMath::Cos(2.0 * TMath::Pi() * t);
-  double y  = y.point.y() + r * TMath::Sin(2.0 * TMath::Pi() * t);
-  ROOT::Math::XYZPoint i(x,y,z0); // just one point piercing z-plane
-  return i;
+  double y  = h.point.y() + r * TMath::Sin(2.0 * TMath::Pi() * t);
+  
+  return i.SetXYZ(x, y, z0);
 }
 
 
@@ -667,34 +678,34 @@ double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double 
   spot.neighbourindex = std::make_pair(-1,-1);
   
   // axis 1 of rectangle
-  if (point_plane_check_y(isec1, side)) // -y error
+  if (point_plane_check_y(isec1, p.side)) // -y error
     spot.axis1.setbound(isec1.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
-  if (point_plane_check_y(isec2, side)) // +y error
+  if (point_plane_check_y(isec2, p.side)) // +y error
     spot.axis1.setbound(isec2.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
   
   // axis 2 of rectangle
-  if (point_plane_check_y(isec3, side)) // -z error
+  if (point_plane_check_y(isec3, p.side)) // -z error
     spot.axis2.setbound(isec3.z());
   else {
-    (side==1) ? spot.axis2.setbound(zbound.from()) : spot.axis2.setbound(zbound.to());
+    (p.side==1) ? spot.axis2.setbound(zbound.from()) : spot.axis2.setbound(zbound.to());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 4 : 5, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 4 : 5);
   }
 
-  if (point_plane_check_y(isec4, side)) // +z error
+  if (point_plane_check_y(isec4, p.side)) // +z error
     spot.axis2.setbound(isec4.z());
   else {
-    (side==1) ? spot.axis2.setbound(zbound.to()) : spot.axis2.setbound(zbound.from());
+    (p.side==1) ? spot.axis2.setbound(zbound.to()) : spot.axis2.setbound(zbound.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 5 : 4, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 5 : 4);
   }
@@ -723,34 +734,34 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
   spot.neighbourindex = std::make_pair(-1,-1);
   
   // axis 1 of rectangle
-  if (point_plane_check_z(isec1, side)) // -y error
+  if (point_plane_check_z(isec1, p.side)) // -y error
     spot.axis1.setbound(isec1.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
-  if (point_plane_check_z(isec2, side)) // +y error
+  if (point_plane_check_z(isec2, p.side)) // +y error
     spot.axis1.setbound(isec2.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
   
   // axis 2 of rectangle
-  if (point_plane_check_z(isec3, side)) // -z error
+  if (point_plane_check_z(isec3, p.side)) // -z error
     spot.axis2.setbound(isec3.y());
   else {
-    (side==1) ? spot.axis2.setbound(ybound.from()) : spot.axis2.setbound(ybound.to());
+    (p.side==1) ? spot.axis2.setbound(ybound.from()) : spot.axis2.setbound(ybound.to());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
   }
 
-  if (point_plane_check_z(isec4, side)) // +z error
+  if (point_plane_check_z(isec4, p.side)) // +z error
     spot.axis2.setbound(isec4.y());
   else {
-    (side==1) ? spot.axis2.setbound(ybound.to()) : spot.axis2.setbound(ybound.from());
+    (p.side==1) ? spot.axis2.setbound(ybound.to()) : spot.axis2.setbound(ybound.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 3 : 2);
   }
@@ -851,34 +862,34 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   spot.neighbourindex = std::make_pair(-1,-1);
   
   // axis 1 of rectangle
-  if (point_plane_check_y(isec1, side)) // -y error
+  if (point_plane_check_y(isec1, p.side)) // -y error
     spot.axis1.setbound(isec1.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
-  if (point_plane_check_y(isec2, side)) // +y error
+  if (point_plane_check_y(isec2, p.side)) // +y error
     spot.axis1.setbound(isec2.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
   
   // axis 2 of rectangle
-  if (point_plane_check_y(isec3, side)) // -z error
+  if (point_plane_check_y(isec3, p.side)) // -z error
     spot.axis2.setbound(isec3.z());
   else {
-    (side==1) ? spot.axis2.setbound(zbound.from()) : spot.axis2.setbound(zbound.to());
+    (p.side==1) ? spot.axis2.setbound(zbound.from()) : spot.axis2.setbound(zbound.to());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 4 : 5, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 4 : 5);
   }
 
-  if (point_plane_check_y(isec4, side)) // +z error
+  if (point_plane_check_y(isec4, p.side)) // +z error
     spot.axis2.setbound(isec4.z());
   else {
-    (side==1) ? spot.axis2.setbound(zbound.to()) : spot.axis2.setbound(zbound.from());
+    (p.side==1) ? spot.axis2.setbound(zbound.to()) : spot.axis2.setbound(zbound.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 5 : 4, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 5 : 4);
   }
@@ -907,34 +918,34 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   spot.neighbourindex = std::make_pair(-1,-1);
   
   // axis 1 of rectangle
-  if (point_plane_check_z(isec1, side)) // -y error
+  if (point_plane_check_z(isec1, p.side)) // -y error
     spot.axis1.setbound(isec1.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
-  if (point_plane_check_z(isec2, side)) // +y error
+  if (point_plane_check_z(isec2, p.side)) // +y error
     spot.axis1.setbound(isec2.x());
   else {
-    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    (p.side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
   
   // axis 2 of rectangle
-  if (point_plane_check_z(isec3, side)) // -z error
+  if (point_plane_check_z(isec3, p.side)) // -z error
     spot.axis2.setbound(isec3.y());
   else {
-    (side==1) ? spot.axis2.setbound(ybound.from()) : spot.axis2.setbound(ybound.to());
+    (p.side==1) ? spot.axis2.setbound(ybound.from()) : spot.axis2.setbound(ybound.to());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
   }
 
-  if (point_plane_check_z(isec4, side)) // +z error
+  if (point_plane_check_z(isec4, p.side)) // +z error
     spot.axis2.setbound(isec4.y());
   else {
-    (side==1) ? spot.axis2.setbound(ybound.to()) : spot.axis2.setbound(ybound.from());
+    (p.side==1) ? spot.axis2.setbound(ybound.to()) : spot.axis2.setbound(ybound.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 3 : 2);
   }
