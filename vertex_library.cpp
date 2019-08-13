@@ -350,9 +350,9 @@ std::vector<Helix3d> VertexExtrapolator::helixcollection(int charge)
   current.pitch  = hf.pitch; 
   current.charge = charge; // all the same charge
 
-  ROOT::Math::XYZVector pplusy(hf.xc, hf.yc + hf.erryc, hf.zc); // centre
-  ROOT::Math::XYZVector pminusy(hf.xc, hf.yc - hf.erryc, hf.zc); // centre
-  ROOT::Math::XYZVector pbest(hf.xc, hf.yc, hf.zc); // centre
+  ROOT::Math::XYZPoint pplusy(hf.xc, hf.yc + hf.erryc, hf.zc); // centre
+  ROOT::Math::XYZPoint pminusy(hf.xc, hf.yc - hf.erryc, hf.zc); // centre
+  ROOT::Math::XYZPoint pbest(hf.xc, hf.yc, hf.zc); // centre
   double pitchup = hf.pitch + errpitch;
   double pitchdown = hf.pitch - errpitch;
 
@@ -371,6 +371,80 @@ std::vector<Helix3d> VertexExtrapolator::helixcollection(int charge)
   collecton.push_back(current);
   
   return collection;
+}
+
+
+void VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side)
+{
+  // this sets rectangle axes for calovertex, the calorimeter rectangle container
+  // depending on which unique plane is intersected by the best fit helix
+
+  Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
+  Interval zbound(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
+  Interval xbound_back(allPlanes.at(0).point.x(), 0.0);
+  Interval xbound_front(0.0, allPlanes.at(1).point.x());
+
+  // centre point from best fit helix
+  ROOT::Math::XYZPoint pbest(hf.xc(), hf.yc(), hf.zc());
+  Helix3d best;
+  best.point = pbest;
+  best.pitch = hf.pitch;
+  best.radius = hf.radius;
+  best.charge = hc.front().charge; // all the same charge
+
+  if (side == p.side) { // only planes on the correct side
+    ROOT::Math::XYZPoint centre = intersect_helix_plane(best, p);
+    if (centre.x()>10000.0 || centre.y()>10000.0 || centre.z()>10000.0) return; // no intersection signature, end here
+
+    if (p.planeid<2) { // main wall
+      if (point_plane_check_x(centre, p.side)) { // best fit hits this plane
+	double area = mainwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
+	  // check neighbour walls
+	  int indx1 = calovertex.back().neighbourindex.first;
+	  int indx2 = calovertex.back().neighbourindex.second;
+	  if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // xwall
+	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area);
+	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
+	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area);
+	  if (indx2 > 0) // can only be gveto since xwall checked first
+	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area);
+	} 
+      }
+    }
+    else if ((p.planeid>=2 && p.planeid<4) || (p.planeid>=6 && p.planeid<8)) { // xwall
+      if (point_plane_check_y(centre, side)) { // best fit hits this plane
+	double area = xwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
+	  // check neighbour walls
+	  int indx1 = calovertex.back().neighbourindex.first;
+	  int indx2 = calovertex.back().neighbourindex.second;
+	  if (indx1<2) // mainwall
+	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area);
+	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
+	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area);
+	  if (indx2 > 0) // can only be gveto since mainwall checked first
+	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area);
+	}
+      }
+    }
+    else { // gveto
+      if (point_plane_check_z(centre, side)) { // best fit hits this plane
+	double area = gveto_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
+	  // check neighbour walls
+	  int indx1 = calovertex.back().neighbourindex.first;
+	  int indx2 = calovertex.back().neighbourindex.second;
+	  if (indx1<2) // mainwall
+	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area);
+	  else if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // should be set to xwall then
+	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area);
+	  if (indx2 > 0) // can only be xwall since mainwall checked first
+	    double d = xwall_check_helix(hc, allPlanes.at(indx2), area);
+	}
+      }
+    }
+  } // correct side, otherwise do nothing
 }
 
 
@@ -512,7 +586,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane 
   double pitch = h.pitch;
   double t = (z0 - zc) / pitch;
   if (t>=1)  // prevent full or more circle spirals to hit z plane
-    return   ROOT::Math::XYZPoint i(0.0, 0.0, 10001.0); // empty
+    return ROOT::Math::XYZPoint i(0.0, 0.0, 10001.0); // empty
   double x  = h.point.x() + r * TMath::Cos(2.0 * TMath::Pi() * t);
   double y  = y.point.y() + r * TMath::Sin(2.0 * TMath::Pi() * t);
   ROOT::Math::XYZPoint i(x,y,z0); // just one point piercing z-plane
@@ -522,6 +596,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d h, Plane 
 
 // Checking section
 // ****************
+// line checks
 double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, double area)
 {
   Rectangle spot; // into vector calovertex
@@ -705,6 +780,172 @@ void VertexExtrapolator::zcheck(std::vector<Line3d>& lc, int side)
   }
 }
 
+// Helix checks
+double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area)
+{
+  Rectangle spot; // into vector calovertex
+  Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
+  Interval zbound(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
+
+  ROOT::Math::XYZPoint isec1 = intersect_helix_plane(hc.at(0), p);
+  ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), p);
+  ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), p);
+  ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), p);
+  spot.planeid = p.planeid;
+  spot.side = p.side;
+  spot.neighbourindex = std::make_pair(-1,-1);
+  
+  // axis 1 of rectangle
+  if (point_plane_check_x(isec1, p.side)) // -y error
+    spot.axis1.setbound(isec1.y());
+  else {
+    (p.side==1) ? spot.axis1.setbound(ybound.from()) : spot.axis1.setbound(ybound.to());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
+  }
+  if (point_plane_check_x(isec2, p.side)) // +y error
+    spot.axis1.setbound(isec2.y());
+  else {
+    (p.side==1) ? spot.axis1.setbound(ybound.to()) : spot.axis1.setbound(ybound.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 3 : 2);
+  }  
+  // axis 2 of rectangle
+  if (point_plane_check_x(isec3, p.side)) // -z error
+    spot.axis2.setbound(isec3.z());
+  else {
+    (p.side==1) ? spot.axis2.setbound(zbound.from()) : spot.axis2.setbound(zbound.to());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 4 : 5, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 4 : 5);
+  }
+  if (point_plane_check_x(isec4, p.side)) // +z error
+    spot.axis2.setbound(isec4.z());
+  else {
+    (p.side==1) ? spot.axis2.setbound(zbound.to()) : spot.axis2.setbound(zbound.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 5 : 4, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 5 : 4);
+  }  
+  double original_area;
+  double width1 = spot.axis1.width();
+  double width2 = spot.axis2.width();
+  (area<0.0) ? original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z()) : original_area = area;
+  spot.areafraction = (width1 * width2) / original_area;
+  calovertex.push_back(spot);
+  return original_area;
+}
+
+
+double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area)
+{
+  Rectangle spot; // into vector calovertex
+  Interval zbound(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
+  Interval xbound_back(allPlanes.at(0).point.x(), 0.0);
+  Interval xbound_front(0.0, allPlanes.at(1).point.x());
+
+  ROOT::Math::XYZPoint isec1 = intersect_helix_plane(hc.at(0), p);
+  ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), p);
+  ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), p);
+  ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), p);
+  spot.planeid = p.planeid;
+  spot.side = p.side;
+  spot.neighbourindex = std::make_pair(-1,-1);
+  
+  // axis 1 of rectangle
+  if (point_plane_check_y(isec1, side)) // -y error
+    spot.axis1.setbound(isec1.x());
+  else {
+    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
+  }
+  if (point_plane_check_y(isec2, side)) // +y error
+    spot.axis1.setbound(isec2.x());
+  else {
+    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
+  }
+  
+  // axis 2 of rectangle
+  if (point_plane_check_y(isec3, side)) // -z error
+    spot.axis2.setbound(isec3.z());
+  else {
+    (side==1) ? spot.axis2.setbound(zbound.from()) : spot.axis2.setbound(zbound.to());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 4 : 5, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 4 : 5);
+  }
+
+  if (point_plane_check_y(isec4, side)) // +z error
+    spot.axis2.setbound(isec4.z());
+  else {
+    (side==1) ? spot.axis2.setbound(zbound.to()) : spot.axis2.setbound(zbound.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 5 : 4, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 5 : 4);
+  }
+  
+  double original_area;
+  (area<0.0) ? original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.z() - isec3.z()) : original_area = area;
+  spot.areafraction = (spot.axis1.width() * spot.axis2.width()) / original_area;
+  calovertex.push_back(spot);
+  return original_area;
+}
+
+
+double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, double area)
+{
+  Rectangle spot; // into vector calovertex
+  Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
+  Interval xbound_back(allPlanes.at(0).point.x(), 0.0);
+  Interval xbound_front(0.0, allPlanes.at(1).point.x());
+
+  ROOT::Math::XYZPoint isec1 = intersect_helix_plane(hc.at(0), p);
+  ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), p);
+  ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), p);
+  ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), p);
+  spot.planeid = p.planeid;
+  spot.side = p.side;
+  spot.neighbourindex = std::make_pair(-1,-1);
+  
+  // axis 1 of rectangle
+  if (point_plane_check_z(isec1, side)) // -y error
+    spot.axis1.setbound(isec1.x());
+  else {
+    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
+  }
+  if (point_plane_check_z(isec2, side)) // +y error
+    spot.axis1.setbound(isec2.x());
+  else {
+    (side==1) ? spot.axis1.setbound(xbound_front.to()) : spot.axis1.setbound(xbound_back.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
+  }
+  
+  // axis 2 of rectangle
+  if (point_plane_check_z(isec3, side)) // -z error
+    spot.axis2.setbound(isec3.y());
+  else {
+    (side==1) ? spot.axis2.setbound(ybound.from()) : spot.axis2.setbound(ybound.to());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
+  }
+
+  if (point_plane_check_z(isec4, side)) // +z error
+    spot.axis2.setbound(isec4.y());
+  else {
+    (side==1) ? spot.axis2.setbound(ybound.to()) : spot.axis2.setbound(ybound.from());
+    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
+    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 3 : 2);
+  }
+  
+  double original_area;
+  (area<0.0) ? original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.y() - isec3.y()) : original_area = area;
+  spot.areafraction = (spot.axis1.width() * spot.axis2.width()) / original_area;
+  calovertex.push_back(spot);
+  return original_area;
+}
+
 
 void VertexExtrapolator::zcheck_helix(std::vector<Helix3d>& hc, int side)
 {
@@ -725,7 +966,7 @@ void VertexExtrapolator::zcheck_helix(std::vector<Helix3d>& hc, int side)
   }
 }
 
-
+// Point checking
 bool VertexExtrapolator::point_plane_check_x(ROOT::Math::XYZPoint point, int side)
 {
   // within bounds of main wall and correct side.
@@ -770,7 +1011,7 @@ bool VertexExtrapolator::point_plane_check_z(ROOT::Math::XYZPoint point, int sid
   return check;
 }
 
-
+// for charge orientation
 double VertexExtrapolator::findLowerYBound() {
   std::vector<double> dummy;
   for (auto val : info.minx)
@@ -798,6 +1039,8 @@ double VertexExtrapolator::findUpperYBound() {
   double max2 = *maxit;
   return (max1>=max2) ? max1 : max2;
 }
+
+
 
 // *****
 // ** Utility Interval methods
