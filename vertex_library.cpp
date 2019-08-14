@@ -345,8 +345,57 @@ void VertexExtrapolator::intersect_helix()
     }
   }
   if (info.foilcalo.first) { // only if a foil vertex is required
-  }
+    foilvertex.planeid = 10; // foil id
+    foilvertex.side = 1; // irrelevant here
+    Interval ybounds(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
+    Interval zbounds(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
 
+    ROOT::Math::XYZPoint origin(0.0, 0.0, 0.0);
+    ROOT::Math::XYZVector xaxis(1.0, 0.0, 0.0);
+    Plane foil;
+    foil.planeid = 10;
+    foil.side = 1; // irrelevant here
+    foil.point = origin;
+    foil.normal = xaxis;
+    ROOT::Math::XYZPoint isec1 = intersect_helix_plane(hc.at(0), foil);
+    ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), foil);
+    ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), foil);
+    ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), foil);
+
+    // axis1 along y
+    if (point_plane_check_x(isec1, 1)) // side irrelevant here
+      foilvertex.axis1.setbound(isec1.y());
+    else 
+      foilvertex.axis1.setbound(ybounds.to());
+    if (point_plane_check_x(isec2, 1))
+      foilvertex.axis1.setbound(isec2.y());
+    else 
+      foilvertex.axis1.setbound(ybounds.from());
+
+    // axis2 along z
+    if (point_plane_check_x(isec3, 1))
+      foilvertex.axis2.setbound(isec3.z());
+    else 
+      foilvertex.axis2.setbound(zbounds.to());      
+    if (point_plane_check_x(isec4, 1))
+      foilvertex.axis2.setbound(isec4.z());
+    else 
+      foilvertex.axis2.setbound(zbounds.from());
+
+    double original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z());
+    foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+  }
+  if ((!info.foilcalo.first) && (!info.foilcalo.second)) {
+    // both vertices on wires, empty vertex rectangles
+    foilvertex.axis1.clear(); // zero axes
+    foilvertex.axis2.clear();
+    foilvertex.planeid= -1;
+    foilvertex.side   = -1;
+    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+    calovertex.clear(); // empty vector
+  }
+  return;
 }
 
 
@@ -467,6 +516,9 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d& h, Plane
   else if (p.planeid>=2 && p.planeid<4 || p.planeid>=6 && p.planeid<8) // xwall
     isec = intersect_helix_xwall(h, p); // +- y from p.planeid
 
+  else if (p.planeid == 10) // foil
+    isec = intersect_helix_foil(h, p); 
+
   else // gveto
     isec = intersect_helix_gveto(h, p); // +- z from p.planeid
 
@@ -490,7 +542,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d& h, Plane
   double xc = h.point.x(); // helix centre x
   double r  = h.radius;
   double arg = (x0 - xc) / r;
-  if (arg>=1)  // not hitting main wall
+  if (fabs(arg)>=1)  // not hitting main wall
     return imin.SetXYZ(10001.0, 0.0, 0.0); // empty
 
   double pitch = h.pitch;
@@ -515,6 +567,56 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d& h, Plane
   std::vector<double> distances;
   for (auto ipoint : pointcollection) {
     for (auto mi : info.maxx) { // has to contain layer 8 by definition
+      ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
+      distances.push_back(Pointdistance(ipoint, wirep));
+    }
+    std::vector<double>::iterator mit = std::min_element(distances.begin(), distances.end());
+    if (*mit < minDistance) {
+      minDistance = *mit;
+      imin = ipoint;
+    }
+    distances.clear();
+  }
+
+  return imin;
+}
+
+
+ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_foil(Helix3d& h, Plane p)
+{
+  // *** sort two points first, only one should come back ***
+  std::vector<ROOT::Math::XYZPoint> pointcollection;
+  ROOT::Math::XYZPoint imin;
+  // parameter
+  double x0 = p.point.x(); // x coordinate foil
+  double xc = h.point.x(); // helix centre x
+  double r  = h.radius;
+  double arg = (x0 - xc) / r;
+  if (fabs(arg)>=1)  // not hitting foil
+    return imin.SetXYZ(10001.0, 0.0, 0.0); // empty
+
+  double pitch = h.pitch;
+  double t  =  TMath::ACos(arg);
+
+  double y  = h.point.y() + TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
+  double y2 = h.point.y() - TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
+  double z  = h.point.z() + pitch * t  / (2.0 * TMath::Pi());
+  double z2 = h.point.z() - pitch * t  / (2.0 * TMath::Pi());
+  ROOT::Math::XYZPoint i(x0,y,z);
+  pointcollection.push_back(i);
+  ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
+  pointcollection.push_back(i2);
+  ROOT::Math::XYZPoint i3(x0,y,z2);
+  pointcollection.push_back(i3);
+  ROOT::Math::XYZPoint i4(x0,y2,z2);
+  pointcollection.push_back(i4);
+  // reduce to one
+
+  // pick the closest to the collection of calo-side tracker hits
+  double minDistance = 10002.0; // dummy big
+  std::vector<double> distances;
+  for (auto ipoint : pointcollection) {
+    for (auto mi : info.minx) { // has to contain layer 0 by definition
       ROOT::Math::XYZPoint wirep(mi.wirex, mi.wirey, mi.zcoord);
       distances.push_back(Pointdistance(ipoint, wirep));
     }
