@@ -79,6 +79,7 @@ struct Plane {
 struct Rectangle {
   Interval axis1; // through centre
   Interval axis2; // perpendicular
+  Interval axis3; // for box as wirevertex only
   double areafraction; // on given plane fraction; interval ]0,1]
   int planeid; // link to plane
   int side; // flags x negative (0) or positive (1)
@@ -174,6 +175,7 @@ class VertexExtrapolator
   // in form of two intervals as main axes
 
  private:
+  Rectangle wirevertex;
   Rectangle foilvertex;
   std::vector<Rectangle> calovertex;
   LineFit lf;
@@ -188,13 +190,16 @@ class VertexExtrapolator
   void intersect_brokenline();
   void zcheck(std::vector<Line3d>& lc, int side);
   void zcheck_helix(std::vector<Helix3d>& hc, int side);
+  void set_wirevertex(bool foilside);
+  void set_foilspot();
+  void set_foilspot_helix(std::vector<Helix3d>& hc);
   void set_calospot(std::vector<Line3d>& lc, Plane p, int side);
   void set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side);
   bool point_plane_check_x(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_y(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_z(ROOT::Math::XYZPoint point, int side);
-  double findLowerYBound();
-  double findUpperYBound();
+  double findLowerYBoundatEnds();
+  double findUpperYBoundatEnds();
   double Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2);
   double mainwall_check(std::vector<Line3d>& lc, Plane p, double area);
   double xwall_check(std::vector<Line3d>& lc, Plane p, double area);
@@ -207,6 +212,10 @@ class VertexExtrapolator
   ROOT::Math::XYZPoint intersect_helix_gveto(Helix3d& h, Plane p);
   ROOT::Math::XYZPoint intersect_line_plane(Line3d& l, Plane p);
   ROOT::Math::XYZPoint intersect_helix_plane(Helix3d& h, Plane p);
+  ROOT::Math::XYZPoint intersect_helix_foil(Helix3d& h, Plane p);
+  MetaInfo findFoilSideCorner();
+  MetaInfo findCaloSideCorner();
+  MetaInfo findCorner(MetaInfo min, MetaInfo max);
   std::vector<Line3d> linecollection(int side);
   std::vector<Helix3d> helixcollection(int charge);
 

@@ -71,14 +71,66 @@ void VertexExtrapolator::intersect_line()
   zcheck(lc, side);
   //  std::cout << "after zcheck, foilcalo is (" << info.foilcalo.first << ", " << info.foilcalo.second << ")" << std::endl;
 
-  if (info.foilcalo.second) { // only if a calo vertex is required
-    for (Plane p : allPlanes) {
-      // calo spots - determined by centre fit line intersecting exactly one calo wall
-      // and left-overs on other planes, if any
+  bool foilside = true;
+  if (info.foilcalo.first && info.foilcalo.second) { // vertices on foil and calo
+    // vertex on foil
+    set_foilspot();
+
+    // calo spots - determined by centre fit line intersecting exactly one calo wall
+    // and left-overs on other planes, if any
+    for (Plane p : allPlanes)
       set_calospot(lc, p, side); 
-    }
+
+    // no wire vertex
+    wirevertex.axis1.clear(); // zero axes
+    wirevertex.axis2.clear();
+    wirevertex.axis3.clear();
+    wirevertex.planeid= -1;
+    wirevertex.side   = -1;
+    wirevertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
   }
-  if (info.foilcalo.first) { // only if a foil vertex is required
+  else if (info.foilcalo.first && !info.foilcalo.second) { // only a foil vertex is required
+    // vertex on foil
+    set_foilspot();
+
+    calovertex.clear(); // empty vector
+
+    set_wirevertex(!foilside);
+  }
+  else if (!info.foilcalo.first && info.foilcalo.second) { // only a calo vertex is required
+    foilvertex.axis1.clear(); // zero axes
+    foilvertex.axis2.clear();
+    foilvertex.axis3.clear();
+    foilvertex.planeid= -1;
+    foilvertex.side   = -1;
+    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+
+    set_wirevertex(foilside);
+
+    for (Plane p : allPlanes)
+      set_calospot(lc, p, side); 
+  }
+  else {
+    // both vertices on wires, empty vertex rectangles
+    foilvertex.axis1.clear(); // zero axes
+    foilvertex.axis2.clear();
+    foilvertex.axis3.clear();
+    foilvertex.planeid= -1;
+    foilvertex.side   = -1;
+    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+
+    calovertex.clear(); // empty vector
+
+    set_wirevertex(foilside);
+    set_wirevertex(!foilside);
+  }
+  return; // end here
+}
+
+
+
+void VertexExtrapolator::set_foilspot()
+{
     foilvertex.planeid = 10; // foil id
     foilvertex.side = 1; // irrelevant here
     ROOT::Math::XYZPoint pplusy (0.0, lf.ixy+lf.errixy, lf.ixz); // intercepts are
@@ -110,17 +162,7 @@ void VertexExtrapolator::intersect_line()
     double original_area = fabs(pplusy.y() - pminusy.y()) * fabs(pplusz.z() - pminusz.z());
     foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
-  }
-  if ((!info.foilcalo.first) && (!info.foilcalo.second)) {
-    // both vertices on wires, empty vertex rectangles
-    foilvertex.axis1.clear(); // zero axes
-    foilvertex.axis2.clear();
-    foilvertex.planeid= -1;
-    foilvertex.side   = -1;
-    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
-    calovertex.clear(); // empty vector
-  }
-  return; // end here
+    foilvertex.axis3.clear();
 }
 
 
@@ -312,8 +354,8 @@ void VertexExtrapolator::intersect_helix()
   current.pitch  = hf.pitch;
   
   // helix charge from fitting the centre
-  double lower_bd = findLowerYBound();
-  double upper_bd = findUpperYBound();
+  double lower_bd = findLowerYBoundatEnds();
+  double upper_bd = findUpperYBoundatEnds();
   if (side == 0) { // back tracker x<0
     if (pbest.y() > lower_bd)
       current.charge = 1; // positron, right curvature
@@ -337,63 +379,50 @@ void VertexExtrapolator::intersect_helix()
   // check final calo: gvet; finalizes info.foilcalo.second to true or false
   zcheck_helix(hc, side);
 
-  if (info.foilcalo.second) { // only if a calo vertex is required
-    for (Plane p : allPlanes) {
-      // calo spots - determined by centre fit helix intersecting exactly one calo wall
-      // and left-overs on other planes, if any
+  bool foilside = true;
+  if (info.foilcalo.first && info.foilcalo.second) {
+    // vertex on foil
+    set_foilspot_helix(hc);
+
+    // calo spots - determined by centre fit helix intersecting exactly one calo wall
+    // and left-overs on other planes, if any
+    for (Plane p : allPlanes)
       set_calospot_helix(hc, p, side); 
-    }
   }
-  if (info.foilcalo.first) { // only if a foil vertex is required
-    foilvertex.planeid = 10; // foil id
-    foilvertex.side = 1; // irrelevant here
-    Interval ybounds(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
-    Interval zbounds(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
+  else if (info.foilcalo.first && !info.foilcalo.second) {
+    // vertex on foil
+    set_foilspot_helix(hc);
 
-    ROOT::Math::XYZPoint origin(0.0, 0.0, 0.0);
-    ROOT::Math::XYZVector xaxis(1.0, 0.0, 0.0);
-    Plane foil;
-    foil.planeid = 10;
-    foil.side = 1; // irrelevant here
-    foil.point = origin;
-    foil.normal = xaxis;
-    ROOT::Math::XYZPoint isec1 = intersect_helix_plane(hc.at(0), foil);
-    ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), foil);
-    ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), foil);
-    ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), foil);
+    calovertex.clear(); // empty vector
 
-    // axis1 along y
-    if (point_plane_check_x(isec1, 1)) // side irrelevant here
-      foilvertex.axis1.setbound(isec1.y());
-    else 
-      foilvertex.axis1.setbound(ybounds.to());
-    if (point_plane_check_x(isec2, 1))
-      foilvertex.axis1.setbound(isec2.y());
-    else 
-      foilvertex.axis1.setbound(ybounds.from());
-
-    // axis2 along z
-    if (point_plane_check_x(isec3, 1))
-      foilvertex.axis2.setbound(isec3.z());
-    else 
-      foilvertex.axis2.setbound(zbounds.to());      
-    if (point_plane_check_x(isec4, 1))
-      foilvertex.axis2.setbound(isec4.z());
-    else 
-      foilvertex.axis2.setbound(zbounds.from());
-
-    double original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z());
-    foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
-    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+    set_wirevertex(!foilside);
   }
-  if ((!info.foilcalo.first) && (!info.foilcalo.second)) {
-    // both vertices on wires, empty vertex rectangles
+  else if (!info.foilcalo.first && info.foilcalo.second) {
     foilvertex.axis1.clear(); // zero axes
     foilvertex.axis2.clear();
+    foilvertex.axis3.clear();
     foilvertex.planeid= -1;
     foilvertex.side   = -1;
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+
+    set_wirevertex(foilside);
+
+    for (Plane p : allPlanes)
+      set_calospot_helix(hc, p, side); 
+  }
+  else {
+    // both vertices on wires, empty vertex rectangles
+    foilvertex.axis1.clear(); // zero axes
+    foilvertex.axis2.clear();
+    foilvertex.axis3.clear();
+    foilvertex.planeid= -1;
+    foilvertex.side   = -1;
+    foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+
     calovertex.clear(); // empty vector
+
+    set_wirevertex(foilside);
+    set_wirevertex(!foilside);
   }
   return;
 }
@@ -433,11 +462,56 @@ std::vector<Helix3d> VertexExtrapolator::helixcollection(int charge)
 }
 
 
+void VertexExtrapolator::set_foilspot_helix(std::vector<Helix3d>& hc) {
+  foilvertex.planeid = 10; // foil id
+  foilvertex.side = 1; // irrelevant here
+  Interval ybounds(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
+  Interval zbounds(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
+  
+  ROOT::Math::XYZPoint origin(0.0, 0.0, 0.0);
+  ROOT::Math::XYZVector xaxis(1.0, 0.0, 0.0);
+  Plane foil;
+  foil.planeid = 10;
+  foil.side = 1; // irrelevant here
+  foil.point = origin;
+  foil.normal = xaxis;
+  ROOT::Math::XYZPoint isec1 = intersect_helix_plane(hc.at(0), foil);
+  ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), foil);
+  ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), foil);
+  ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), foil);
+  
+  // axis1 along y
+  if (point_plane_check_x(isec1, 1)) // side irrelevant here
+    foilvertex.axis1.setbound(isec1.y());
+  else 
+    foilvertex.axis1.setbound(ybounds.to());
+  if (point_plane_check_x(isec2, 1))
+    foilvertex.axis1.setbound(isec2.y());
+  else 
+    foilvertex.axis1.setbound(ybounds.from());
+  
+  // axis2 along z
+  if (point_plane_check_x(isec3, 1))
+    foilvertex.axis2.setbound(isec3.z());
+  else 
+    foilvertex.axis2.setbound(zbounds.to());      
+  if (point_plane_check_x(isec4, 1))
+    foilvertex.axis2.setbound(isec4.z());
+  else 
+    foilvertex.axis2.setbound(zbounds.from());
+  
+  double original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z());
+  foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+  foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+  foilvertex.axis3.clear();
+}
+
+
 void VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side)
 {
   // this sets rectangle axes for calovertex, the calorimeter rectangle container
   // depending on which unique plane is intersected by the best fit helix
-
+  
   Interval ybound(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
   Interval zbound(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
   Interval xbound_back(allPlanes.at(0).point.x(), 0.0);
@@ -723,6 +797,7 @@ double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, doub
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
+  spot.axis3.clear();
   
   // axis 1 of rectangle
   if (point_plane_check_x(isec1, p.side)) // -y error
@@ -778,6 +853,7 @@ double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double 
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
+  spot.axis3.clear();
   
   // axis 1 of rectangle
   if (point_plane_check_y(isec1, p.side)) // -y error
@@ -834,6 +910,7 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
+  spot.axis3.clear();
   
   // axis 1 of rectangle
   if (point_plane_check_z(isec1, p.side)) // -y error
@@ -907,6 +984,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
+  spot.axis3.clear();
   
   // axis 1 of rectangle
   if (point_plane_check_x(isec1, p.side)) // -y error
@@ -962,6 +1040,7 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
+  spot.axis3.clear();
   
   // axis 1 of rectangle
   if (point_plane_check_y(isec1, p.side)) // -y error
@@ -1018,6 +1097,7 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
+  spot.axis3.clear();
   
   // axis 1 of rectangle
   if (point_plane_check_z(isec1, p.side)) // -y error
@@ -1125,7 +1205,7 @@ bool VertexExtrapolator::point_plane_check_z(ROOT::Math::XYZPoint point, int sid
 }
 
 // for charge orientation
-double VertexExtrapolator::findLowerYBound() {
+double VertexExtrapolator::findLowerYBoundatEnds() {
   std::vector<double> dummy;
   for (auto val : info.minx)
     dummy.push_back(val.wirey);
@@ -1139,7 +1219,7 @@ double VertexExtrapolator::findLowerYBound() {
   return (min1<=min2) ? min1 : min2;
 }
 
-double VertexExtrapolator::findUpperYBound() {
+double VertexExtrapolator::findUpperYBoundatEnds() {
   std::vector<double> dummy;
   for (auto val : info.minx)
     dummy.push_back(val.wirey);
@@ -1153,6 +1233,89 @@ double VertexExtrapolator::findUpperYBound() {
   return (max1>=max2) ? max1 : max2;
 }
 
+// for wire vertexing
+void VertexExtrapolator::set_wirevertex(bool foilside) { // which cell contains the wire vertex
+  wirevertex.planeid = -1; // any plane as required = a box
+  wirevertex.side = info.side; // where the cluster is
+  wirevertex.neighbourindex = std::make_pair(-1,-1); // none
+  wirevertex.areafraction = 1.0; // by definition
+  wirevertex.axis3.clear();
+
+  if (foilside) {
+    MetaInfo mi = findFoilSideCorner();
+    wirevertex.axis1.setbound(mi.wirex - 22.0); // x [mm]
+    wirevertex.axis1.setbound(mi.wirex + 22.0); // x
+    wirevertex.axis2.setbound(mi.wirey - 22.0); // y
+    wirevertex.axis2.setbound(mi.wirey + 22.0); // y
+    wirevertex.axis3.setbound(mi.zcoord - 10.0); // z
+    wirevertex.axis3.setbound(mi.zcoord + 10.0); // z
+  }
+  else {
+    MetaInfo mi = findCaloSideCorner();
+    wirevertex.axis1.setbound(mi.wirex - 22.0); // x
+    wirevertex.axis1.setbound(mi.wirex + 22.0); // x
+    wirevertex.axis2.setbound(mi.wirey - 22.0); // y
+    wirevertex.axis2.setbound(mi.wirey + 22.0); // y
+    wirevertex.axis3.setbound(mi.zcoord - 10.0); // z
+    wirevertex.axis3.setbound(mi.zcoord + 10.0); // z
+  }
+}
+
+
+MetaInfo VertexExtrapolator::findFoilSideCorner() {
+  // only runs on cells not on layer 0 but closest to foil
+  if (info.minx.size() == 1) return info.minx.front(); // just the one possibility
+
+  std::vector<double> dummy;
+  for (auto val : info.minx) // foil side
+    dummy.push_back(val.wirey); // check y coordinate
+  std::vector<double>::iterator minit = std::min_element(dummy.begin(), dummy.end());
+  std::vector<double>::iterator maxit = std::max_element(dummy.begin(), dummy.end());
+  MetaInfo minmi = info.minx.at(minit - dummy.begin());
+  MetaInfo maxmi = info.minx.at(maxit - dummy.begin());
+  return findCorner(minmi, maxmi);
+}
+
+
+MetaInfo VertexExtrapolator::findCaloSideCorner() {
+  // only runs on cells not on layer 8
+  if (info.maxx.size() == 1) return info.maxx.front(); // just the one possibility
+
+  std::vector<double> dummy;
+  for (auto val : info.maxx) // calo side
+    dummy.push_back(val.wirey); // check y coordinate
+  std::vector<double>::iterator minit = std::min_element(dummy.begin(), dummy.end());
+  std::vector<double>::iterator maxit = std::max_element(dummy.begin(), dummy.end());
+  MetaInfo minmi = info.minx.at(minit - dummy.begin());
+  MetaInfo maxmi = info.minx.at(maxit - dummy.begin());
+  return findCorner(minmi, maxmi);
+}
+
+
+MetaInfo VertexExtrapolator::findCorner(MetaInfo minimum, MetaInfo maximum) {
+  // which direction? Straight tendency up or down
+  double ybound_up  = findUpperYBoundatEnds(); // box limit in y at ends
+  double ybound_low = findLowerYBoundatEnds();
+
+  // bending curves
+  std::vector<double> dummy;
+  for (auto val : info.miny) // in y for all x, not just end layers
+    dummy.push_back(val.wirey); // check y coordinate
+  std::vector<double>::iterator minit = std::min_element(dummy.begin(), dummy.end());
+  double miny = *minit;
+  dummy.clear();
+  for (auto val : info.maxy) // in y for all x, not just end layers
+    dummy.push_back(val.wirey); // check y coordinate
+  std::vector<double>::iterator maxit = std::max_element(dummy.begin(), dummy.end());
+  double maxy = *maxit;
+
+  // bending
+  if (miny < ybound_low) return maximum; // track going down then up
+  else if (maxy > ybound_up) return minimum; // track going up then down
+  // straight tendency
+  else if (minimum.wirey <= ybound_low) return minimum; // found the extreme end
+  else return maximum; // found the extreme end
+}
 
 
 // *****
