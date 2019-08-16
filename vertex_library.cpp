@@ -189,7 +189,7 @@ void VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int side
     if (centre.x()>1000.0 &&centre.y()>10000.0 &&centre.z()>10000.0) return; // no intersection signature, end here
 
     if (p.planeid<2) { // main wall
-      std::cout << "main calo hit: (" << centre.x() << ", " << centre.y() << ", " << centre.z() << ")" << std::endl;
+      //      std::cout << "main calo hit: (" << centre.x() << ", " << centre.y() << ", " << centre.z() << ")" << std::endl;
       if (point_plane_check_x(centre, p.side)) { // best fit hits this plane
 	double area = mainwall_check(lc, p, -1.0); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
@@ -920,21 +920,25 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
   ROOT::Math::XYZPoint isec2 = intersect_line_plane(lc.at(1), p);
   ROOT::Math::XYZPoint isec3 = intersect_line_plane(lc.at(2), p);
   ROOT::Math::XYZPoint isec4 = intersect_line_plane(lc.at(3), p);
+  std::cout << "error gveto hit: (" << isec1.x() << ", " << isec1.y() << ", " << isec1.z() << ")" << std::endl;
+  std::cout << "error gveto hit: (" << isec2.x() << ", " << isec2.y() << ", " << isec2.z() << ")" << std::endl;
+  std::cout << "error gveto hit: (" << isec3.x() << ", " << isec3.y() << ", " << isec3.z() << ")" << std::endl;
+  std::cout << "error gveto hit: (" << isec4.x() << ", " << isec4.y() << ", " << isec4.z() << ")" << std::endl;
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
   spot.axis3.clear();
   
   // axis 1 of rectangle
-  if (point_plane_check_z(isec1, p.side)) // -y error
-    (p.side==1) ? spot.axis1.setlow(isec1.x()) : spot.axis1.sethigh(isec1.x());
+  if (point_plane_check_z(isec3, p.side)) // -y error
+    (p.side==1) ? spot.axis1.setlow(isec3.x()) : spot.axis1.sethigh(isec3.x());
   else {
     (p.side==1) ? spot.axis1.sethigh(xbound_front.to()) : spot.axis1.setlow(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
-  if (point_plane_check_z(isec2, p.side)) // +y error
-    (p.side==1) ? spot.axis1.sethigh(isec2.x()) : spot.axis1.setlow(isec2.x());
+  if (point_plane_check_z(isec4, p.side)) // +y error
+    (p.side==1) ? spot.axis1.sethigh(isec4.x()) : spot.axis1.setlow(isec4.x());
   else {
     (p.side==1) ? spot.axis1.sethigh(xbound_front.to()) : spot.axis1.setlow(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
@@ -942,16 +946,16 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
   }
   
   // axis 2 of rectangle
-  if (point_plane_check_z(isec3, p.side)) // -z error
-    (p.side==0) ? spot.axis2.setlow(isec3.y()) : spot.axis2.sethigh(isec3.y());
+  if (point_plane_check_z(isec1, p.side)) // -z error
+    (p.side==0) ? spot.axis2.setlow(isec1.y()) : spot.axis2.sethigh(isec1.y());
   else {
     (p.side==1) ? spot.axis2.setlow(ybound.from()) : spot.axis2.sethigh(ybound.to());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
   }
 
-  if (point_plane_check_z(isec4, p.side)) // +z error
-    (p.side==0) ? spot.axis2.sethigh(isec4.y()) : spot.axis2.setlow(isec4.y());
+  if (point_plane_check_z(isec2, p.side)) // +z error
+    (p.side==0) ? spot.axis2.sethigh(isec2.y()) : spot.axis2.setlow(isec2.y());
   else {
     (p.side==1) ? spot.axis2.sethigh(ybound.to()) : spot.axis2.setlow(ybound.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
@@ -959,7 +963,7 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
   }
   
   double original_area;
-  (area<0.0) ? original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.y() - isec3.y()) : original_area = area;
+  (area<0.0) ? original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.x() - isec3.x()) : original_area = area;
   spot.areafraction = (spot.axis1.width() * spot.axis2.width()) / original_area;
   calovertex.push_back(spot);
   return original_area;
