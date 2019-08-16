@@ -113,10 +113,7 @@ std::vector<Plane> make_planes() {
 }
 
 
-LineFit lineA(VertexInfo& vi) { // artificial line fit solution
-  vi.side = 1; // positive x
-  vi.foilcalo = std::make_pair(true, true); // no wire vertices
-  // no other settings required on vi for a line
+LineFit lineA() { // artificial line fit solution
   LineFit lf;
   lf.ixy = 0.0;
   lf.ixz = 0.0; // intercept origin
@@ -128,206 +125,163 @@ LineFit lineA(VertexInfo& vi) { // artificial line fit solution
   lf.errslxz = 0.2; // 20% error in y, z slopes
   lf.status = 0;
   lf.clid = 1;
-  vi.clsid = 1; // same clsid as hook
   return lf;
 }
 
 
-LineFit lineB(VertexInfo& vi) { // artificial line fit solution
-  vi.side = 1; // positive x
-  vi.foilcalo = std::make_pair(true, true); // no wire vertices
-  // no other settings required on vi for a line
-  LineFit lf;
-  lf.ixy = 0.0;
-  lf.ixz = 0.0; // intercept origin
+LineFit lineB() { // artificial line fit solution
+  LineFit lf = lineA();
   lf.slxy = 10.0;
-  lf.slxz = 0.0; // diagonal up in y
-  lf.errixy = 0.5;
-  lf.errixz = 0.5; // half in intercept y, z
-  lf.errslxy = 0.2; // slopes [9.8, 10.2]
-  lf.errslxz = 0.2; // 2% error in y, z slopes
-  lf.status = 0;
-  lf.clid = 1;
-  vi.clsid = 1; // same clsid as hook
   return lf;
 }
 
 
-LineFit lineC(VertexInfo& vi) { // artificial line fit solution
-  vi.side = 1; // positive x
-  vi.foilcalo = std::make_pair(true, true); // no wire vertices
-  // no other settings required on vi for a line
-  LineFit lf;
-  lf.ixy = 0.0;
-  lf.ixz = 0.0; // intercept origin
+LineFit lineC() { // artificial line fit solution
+  LineFit lf = lineA();
   lf.slxy = 0.0;
   lf.slxz = 10.0; // up in z
-  lf.errixy = 0.5;
-  lf.errixz = 0.5; // half in intercept y, z
-  lf.errslxy = 0.2; // 2% error in y, z slopes
-  lf.errslxz = 0.2; // slope [9.8, 10.2]
-  lf.status = 0;
-  lf.clid = 1;
-  vi.clsid = 1; // same clsid as hook
   return lf;
+}
+
+
+LineFit lineD() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = -1.0;
+  return lf;
+}
+
+
+LineFit lineE() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = -10.0;
+  return lf;
+}
+
+
+LineFit lineF() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = 0.0;
+  lf.slxy = -10.0;
+  return lf;
+}
+
+
+void printve(VertexExtrapolator& ve) {
+  // Results
+  Rectangle fvertex = ve.onfoil();
+  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
+  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
+
+  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
+  std::cout << "Rectangle on calo: " << std::endl;
+  for (auto& cv : cvertex) {
+    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
+    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+  }
+}
+
+int check_line(LineFit lf) {
+  VertexExtrapolator ve(make_planes());
+  VertexInfo vi;
+  vi.side = 1; // positive x
+  vi.foilcalo = std::make_pair(true, true); // no wire vertices
+  vi.clsid = 1; // same clsid as hook
+  // no other settings required on vi for a line
+
+  // need an info vector
+  std::vector<VertexInfo> allinfo;
+  allinfo.push_back(vi);
+  // start the work
+  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
+
+  printve(ve);
+  return (int)ve.oncalo().size();
+}
+
+int check_lineminus(LineFit lf) {
+  VertexExtrapolator ve(make_planes());
+  VertexInfo vi;
+  vi.side = 0; // negative x
+  vi.foilcalo = std::make_pair(true, true); // no wire vertices
+  vi.clsid = 1; // same clsid as hook
+  // no other settings required on vi for a line
+
+  // need an info vector
+  std::vector<VertexInfo> allinfo;
+  allinfo.push_back(vi);
+
+  // start the work
+  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
+
+  printve(ve);
+  return (int)ve.oncalo().size();
 }
 
 
 int check_lineA(){
-  VertexExtrapolator ve(make_planes());
-  VertexInfo vi;
-  LineFit lf = lineA(vi); // set vertex info
-  // need an info vector
-  std::vector<VertexInfo> allinfo;
-  allinfo.push_back(vi);
-  // start the work
-  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
-
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
-  return (int)cvertex.size();
+  LineFit lf = lineA(); // set vertex info
+  return check_line(lf);
 }
 
+
 int check_lineAminus(){
-  VertexExtrapolator ve(make_planes());
-  VertexInfo vi;
-  LineFit lf = lineA(vi); // set vertex info
-  vi.side = 0; // change tracker half
-
-  // need an info vector
-  std::vector<VertexInfo> allinfo;
-  allinfo.push_back(vi);
-
-  // start the work
-  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
-
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
-  return (int)cvertex.size();
+  LineFit lf = lineA(); // set vertex info
+  return check_lineminus(lf);
 }
 
 
 int check_lineB(){
-  VertexExtrapolator ve(make_planes());
-  VertexInfo vi;
-  LineFit lf = lineB(vi); // set vertex info
-  // need an info vector
-  std::vector<VertexInfo> allinfo;
-  allinfo.push_back(vi);
-  // start the work
-  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
-
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
-  return (int)cvertex.size();
+  LineFit lf = lineB(); // set vertex info
+  return check_line(lf);
 }
 
 int check_lineBminus(){
-  VertexExtrapolator ve(make_planes());
-  VertexInfo vi;
-  LineFit lf = lineB(vi); // set vertex info
-  vi.side = 0; // change tracker half
-
-  // need an info vector
-  std::vector<VertexInfo> allinfo;
-  allinfo.push_back(vi);
-
-  // start the work
-  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
-
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
-  return (int)cvertex.size();
+  LineFit lf = lineB(); // set vertex info
+  return check_lineminus(lf);
 }
-
-
 
 
 int check_lineC(){
-  VertexExtrapolator ve(make_planes());
-  VertexInfo vi;
-  LineFit lf = lineC(vi); // set vertex info
-  // need an info vector
-  std::vector<VertexInfo> allinfo;
-  allinfo.push_back(vi);
-  // start the work
-  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
-
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
-  return (int)cvertex.size();
+  LineFit lf = lineC(); // set vertex info
+  return check_line(lf);
 }
 
 int check_lineCminus(){
-  VertexExtrapolator ve(make_planes());
-  VertexInfo vi;
-  LineFit lf = lineC(vi); // set vertex info
-  vi.side = 0; // change tracker half
+  LineFit lf = lineC(); // set vertex info
+  return check_lineminus(lf);
+}
 
-  // need an info vector
-  std::vector<VertexInfo> allinfo;
-  allinfo.push_back(vi);
 
-  // start the work
-  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
+int check_lineD(){
+  LineFit lf = lineD(); // set vertex info
+  return check_line(lf);
+}
 
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
+int check_lineDminus(){
+  LineFit lf = lineD(); // set vertex info
+  return check_lineminus(lf);
+}
 
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
-  return (int)cvertex.size();
+
+int check_lineE(){
+  LineFit lf = lineE(); // set vertex info
+  return check_line(lf);
+}
+
+int check_lineEminus(){
+  LineFit lf = lineE(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int check_lineF(){
+  LineFit lf = lineF(); // set vertex info
+  return check_line(lf);
+}
+
+int check_lineFminus(){
+  LineFit lf = lineF(); // set vertex info
+  return check_lineminus(lf);
 }
 
 
@@ -355,5 +309,29 @@ TEST_CASE( "Line C", "[falaise][planecheck4]" ) {
 
 TEST_CASE( "Line C-", "[falaise][planecheck5]" ) {
   REQUIRE( check_lineCminus() == 1 );
+}
+
+TEST_CASE( "Line D", "[falaise][planecheck6]" ) {
+  REQUIRE( check_lineD() == 1 );
+}
+
+TEST_CASE( "Line D-", "[falaise][planecheck7]" ) {
+  REQUIRE( check_lineDminus() == 1 );
+}
+
+TEST_CASE( "Line E", "[falaise][planecheck8]" ) {
+  REQUIRE( check_lineE() == 1 );
+}
+
+TEST_CASE( "Line E-", "[falaise][planecheck9]" ) {
+  REQUIRE( check_lineEminus() == 1 );
+}
+
+TEST_CASE( "Line F", "[falaise][planecheck10]" ) {
+  REQUIRE( check_lineF() == 1 );
+}
+
+TEST_CASE( "Line F-", "[falaise][planecheck11]" ) {
+  REQUIRE( check_lineFminus() == 1 );
 }
 
