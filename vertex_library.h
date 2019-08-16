@@ -34,7 +34,8 @@ public:
   bool overlap(Interval other); // return true if overlap exists
   bool contains(double value); // value in interval?
   void clear() {lower=0.0; upper = 0.0;} // set empty
-  void setbound(double value);
+  void setlow(double value) {lower = value;};
+  void sethigh(double value) {upper = value;};
 };
 
 

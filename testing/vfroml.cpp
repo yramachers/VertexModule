@@ -31,10 +31,10 @@ std::vector<Plane> make_planes() {
   planes.push_back(mcalo_posx);
 
   // xwalls part 1
-  const double ycalo_bd_l[2] = {-2505.5, 2505.5};
-  ROOT::Math::XYZPoint p3(0.0,ycalo_bd_l[0],0.0); // negative y
+  const double ycalo_bd[2] = {-2505.5, 2505.5};
+  ROOT::Math::XYZPoint p3(0.0,ycalo_bd[0],0.0); // negative y
   ROOT::Math::XYZVector norm3(0.0,1.0,0.0); // looking in pos y direction
-  ROOT::Math::XYZPoint p4(0.0,ycalo_bd_l[1],0.0); // positive y
+  ROOT::Math::XYZPoint p4(0.0,ycalo_bd[1],0.0); // positive y
   ROOT::Math::XYZVector norm4(0.0,-1.0,0.0); // looking in neg y direction
   Plane xwall_backl;
   xwall_backl.planeid = ++whichcalo;
@@ -52,10 +52,10 @@ std::vector<Plane> make_planes() {
   planes.push_back(xwall_backr);
 
   // gamma veto part 1
-  const double zcalo_bd_l[2] = {-1550.0, 1550.0};
-  ROOT::Math::XYZPoint p5(0.0,0.0,zcalo_bd_l[0]); // negative z
+  const double zcalo_bd[2] = {-1550.0, 1550.0};
+  ROOT::Math::XYZPoint p5(0.0,0.0,zcalo_bd[0]); // negative z
   ROOT::Math::XYZVector norm5(0.0,0.0,1.0); // looking in pos z direction
-  ROOT::Math::XYZPoint p6(0.0,0.0,zcalo_bd_l[1]); // positive z
+  ROOT::Math::XYZPoint p6(0.0,0.0,zcalo_bd[1]); // positive z
   ROOT::Math::XYZVector norm6(0.0,0.0,-1.0); // looking in neg z direction
   Plane gv_backb;
   gv_backb.planeid = ++whichcalo;
@@ -73,9 +73,9 @@ std::vector<Plane> make_planes() {
 
   // xwalls part 2
   side  = 1; // front
-  ROOT::Math::XYZPoint p7(0.0,ycalo_bd_l[0],0.0); // negative y
+  ROOT::Math::XYZPoint p7(0.0,ycalo_bd[0],0.0); // negative y
   ROOT::Math::XYZVector norm7(0.0,1.0,0.0); // looking in pos y direction
-  ROOT::Math::XYZPoint p8(0.0,ycalo_bd_l[1],0.0); // positive y
+  ROOT::Math::XYZPoint p8(0.0,ycalo_bd[1],0.0); // positive y
   ROOT::Math::XYZVector norm8(0.0,-1.0,0.0); // looking in neg y direction
   Plane xwall_frontl;
   xwall_frontl.planeid = ++whichcalo;
@@ -92,9 +92,9 @@ std::vector<Plane> make_planes() {
   planes.push_back(xwall_frontr);
 
   // gamma veto part 2
-  ROOT::Math::XYZPoint p9(0.0,0.0,zcalo_bd_l[0]); // negative z
+  ROOT::Math::XYZPoint p9(0.0,0.0,zcalo_bd[0]); // negative z
   ROOT::Math::XYZVector norm9(0.0,0.0,1.0); // looking in pos z direction
-  ROOT::Math::XYZPoint p10(0.0,0.0,zcalo_bd_l[1]); // positive z
+  ROOT::Math::XYZPoint p10(0.0,0.0,zcalo_bd[1]); // positive z
   ROOT::Math::XYZVector norm10(0.0,0.0,-1.0); // looking in neg z direction
   Plane gv_frontb;
   gv_frontb.planeid = ++whichcalo;
@@ -125,7 +125,27 @@ LineFit lineA(VertexInfo& vi) { // artificial line fit solution
   lf.errixy = 0.5;
   lf.errixz = 0.5; // half in intercept y, z
   lf.errslxy = 0.2; // slopes [0.8, 1.2]
-  lf.errslxz = 0.2; // 20% error in y. z slopes
+  lf.errslxz = 0.2; // 20% error in y, z slopes
+  lf.status = 0;
+  lf.clid = 1;
+  vi.clsid = 1; // same clsid as hook
+  return lf;
+}
+
+
+LineFit lineB(VertexInfo& vi) { // artificial line fit solution
+  vi.side = 1; // positive x
+  vi.foilcalo = std::make_pair(true, true); // no wire vertices
+  // no other settings required on vi for a line
+  LineFit lf;
+  lf.ixy = 0.0;
+  lf.ixz = 0.0; // intercept origin
+  lf.slxy = 10.0;
+  lf.slxz = 0.0; // diagonal up in y
+  lf.errixy = 0.5;
+  lf.errixz = 0.5; // half in intercept y, z
+  lf.errslxy = 0.2; // slopes [9.8, 10.2]
+  lf.errslxz = 0.2; // 20% error in y, z slopes
   lf.status = 0;
   lf.clid = 1;
   vi.clsid = 1; // same clsid as hook
@@ -157,10 +177,101 @@ int check_lineA(){
   return (int)cvertex.size();
 }
 
+int check_lineAminus(){
+  VertexExtrapolator ve(make_planes());
+  VertexInfo vi;
+  LineFit lf = lineA(vi); // set vertex info
+  vi.side = 0; // change tracker half
+
+  // need an info vector
+  std::vector<VertexInfo> allinfo;
+  allinfo.push_back(vi);
+
+  // start the work
+  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
+
+  // Results
+  Rectangle fvertex = ve.onfoil();
+  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
+  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
+
+  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
+  std::cout << "Rectangle on calo: " << std::endl;
+  for (auto& cv : cvertex) {
+    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
+    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+  }
+  return (int)cvertex.size();
+}
+
+
+int check_lineB(){
+  VertexExtrapolator ve(make_planes());
+  VertexInfo vi;
+  LineFit lf = lineB(vi); // set vertex info
+  // need an info vector
+  std::vector<VertexInfo> allinfo;
+  allinfo.push_back(vi);
+  // start the work
+  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
+
+  // Results
+  Rectangle fvertex = ve.onfoil();
+  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
+  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
+
+  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
+  std::cout << "Rectangle on calo: " << std::endl;
+  for (auto& cv : cvertex) {
+    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
+    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+  }
+  return (int)cvertex.size();
+}
+
+int check_lineBminus(){
+  VertexExtrapolator ve(make_planes());
+  VertexInfo vi;
+  LineFit lf = lineB(vi); // set vertex info
+  vi.side = 0; // change tracker half
+
+  // need an info vector
+  std::vector<VertexInfo> allinfo;
+  allinfo.push_back(vi);
+
+  // start the work
+  ve.setTrajectory(lf, allinfo); // runs intersect(0) for a linefit struct
+
+  // Results
+  Rectangle fvertex = ve.onfoil();
+  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
+  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
+
+  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
+  std::cout << "Rectangle on calo: " << std::endl;
+  for (auto& cv : cvertex) {
+    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
+    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+  }
+  return (int)cvertex.size();
+}
 
 
 
-TEST_CASE( "Line A", "[falaise][planecheck]" ) {
+
+TEST_CASE( "Line A", "[falaise][planecheck1]" ) {
   REQUIRE( check_lineA() == 1 );
+}
+
+TEST_CASE( "Line A-", "[falaise][planecheck0]" ) {
+  REQUIRE( check_lineAminus() == 1 );
+}
+
+TEST_CASE( "Line B", "[falaise][planecheck2]" ) {
+  REQUIRE( check_lineB() == 1 );
+}
+
+TEST_CASE( "Line B-", "[falaise][planecheck3]" ) {
+  REQUIRE( check_lineBminus() == 1 );
 }
 
