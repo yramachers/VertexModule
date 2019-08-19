@@ -337,6 +337,30 @@ int check_bmwall_low(){
 }
 
 
+int minus_bxwall(){
+  LineFit lf = borderxwall(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_bmwall(){
+  LineFit lf = bordermwall(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_bxwall_low(){
+  LineFit lf = borderxwall_low(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_bmwall_low(){
+  LineFit lf = bordermwall_low(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
 
 TEST_CASE( "Line A", "[falaise][planecheck1]" ) {
   REQUIRE( check_lineA() == 1 );
@@ -400,5 +424,21 @@ TEST_CASE( "Border xwall low", "[falaise][planecheck14]" ) {
 
 TEST_CASE( "Border mainwall low", "[falaise][planecheck15]" ) {
   REQUIRE( check_bmwall_low() == 2 );
+}
+
+TEST_CASE( "Border neg xwall", "[falaise][planecheck16]" ) {
+  REQUIRE( minus_bxwall() == 2 );
+}
+
+TEST_CASE( "Border neg mainwall", "[falaise][planecheck17]" ) {
+  REQUIRE( minus_bmwall() == 2 );
+}
+
+TEST_CASE( "Border neg xwall low", "[falaise][planecheck18]" ) {
+  REQUIRE( minus_bxwall_low() == 2 );
+}
+
+TEST_CASE( "Border neg mainwall low", "[falaise][planecheck19]" ) {
+  REQUIRE( minus_bmwall_low() == 2 );
 }
 
