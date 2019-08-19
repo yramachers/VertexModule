@@ -194,11 +194,11 @@ class VertexExtrapolator
   void set_wirevertex(bool foilside);
   void set_foilspot();
   void set_foilspot_helix(std::vector<Helix3d>& hc);
-  void set_calospot(std::vector<Line3d>& lc, Plane p, int side);
-  void set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side);
   bool point_plane_check_x(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_y(ROOT::Math::XYZPoint point, int side);
   bool point_plane_check_z(ROOT::Math::XYZPoint point, int side);
+  double set_calospot(std::vector<Line3d>& lc, Plane p, int side);
+  double set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side);
   double findLowerYBoundatEnds();
   double findUpperYBoundatEnds();
   double Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2);
