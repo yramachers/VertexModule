@@ -202,12 +202,12 @@ class VertexExtrapolator
   double findLowerYBoundatEnds();
   double findUpperYBoundatEnds();
   double Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2);
-  double mainwall_check(std::vector<Line3d>& lc, Plane p, double area);
-  double xwall_check(std::vector<Line3d>& lc, Plane p, double area);
-  double gveto_check(std::vector<Line3d>& lc, Plane p, double area);
-  double mainwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area);
-  double xwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area);
-  double gveto_check_helix(std::vector<Helix3d>& hc, Plane p, double area);
+  double mainwall_check(std::vector<Line3d>& lc, Plane p, double area, bool singlewall);
+  double xwall_check(std::vector<Line3d>& lc, Plane p, double area, bool singlewall);
+  double gveto_check(std::vector<Line3d>& lc, Plane p, double area, bool singlewall);
+  double mainwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area, bool singlewall);
+  double xwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area, bool singlewall);
+  double gveto_check_helix(std::vector<Helix3d>& hc, Plane p, double area, bool singlewall);
   ROOT::Math::XYZPoint intersect_helix_mainw(Helix3d& h, Plane p);
   ROOT::Math::XYZPoint intersect_helix_xwall(Helix3d& h, Plane p);
   ROOT::Math::XYZPoint intersect_helix_gveto(Helix3d& h, Plane p);

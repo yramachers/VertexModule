@@ -69,7 +69,7 @@ void VertexExtrapolator::intersect_line()
 
   // check final calo: gvet; finalizes info.foilcalo.second to true or false
   zcheck(lc, side);
-  std::cout << "after zcheck, foilcalo is (" << info.foilcalo.first << ", " << info.foilcalo.second << ")" << std::endl;
+  //  std::cout << "after zcheck, foilcalo is (" << info.foilcalo.first << ", " << info.foilcalo.second << ")" << std::endl;
 
   bool foilside = true;
   if (info.foilcalo.first && info.foilcalo.second) { // vertices on foil and calo
@@ -191,49 +191,49 @@ void VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int side
     if (p.planeid<2) { // main wall
       //      std::cout << "main calo hit: (" << centre.x() << ", " << centre.y() << ", " << centre.z() << ")" << std::endl;
       if (point_plane_check_x(centre, p.side)) { // best fit hits this plane
-	double area = mainwall_check(lc, p, -1.0); // deposits main rectangle in vector
+	double area = mainwall_check(lc, p, -1.0, false); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // xwall
-	    double d = xwall_check(lc, allPlanes.at(indx1), area);
+	    double d = xwall_check(lc, allPlanes.at(indx1), area, true);
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
-	    double d = gveto_check(lc, allPlanes.at(indx1), area);
+	    double d = gveto_check(lc, allPlanes.at(indx1), area, true);
 	  if (indx2 > 0) // can only be gveto since xwall checked first
-	    double d = gveto_check(lc, allPlanes.at(indx2), area);
+	    double d = gveto_check(lc, allPlanes.at(indx2), area, true);
 	} 
       }
     }
     else if ((p.planeid>=2 && p.planeid<4) || (p.planeid>=6 && p.planeid<8)) { // xwall
       if (point_plane_check_y(centre, side)) { // best fit hits this plane
-	double area = xwall_check(lc, p, -1.0); // deposits main rectangle in vector
+	double area = xwall_check(lc, p, -1.0, false); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if (indx1<2) // mainwall
-	    double d = mainwall_check(lc, allPlanes.at(indx1), area);
+	    double d = mainwall_check(lc, allPlanes.at(indx1), area, true);
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
-	    double d = gveto_check(lc, allPlanes.at(indx1), area);
+	    double d = gveto_check(lc, allPlanes.at(indx1), area, true);
 	  if (indx2 > 0) // can only be gveto since mainwall checked first
-	    double d = gveto_check(lc, allPlanes.at(indx2), area);
+	    double d = gveto_check(lc, allPlanes.at(indx2), area, true);
 	}
       }
     }
     else { // gveto
       if (point_plane_check_z(centre, side)) { // best fit hits this plane
-	double area = gveto_check(lc, p, -1.0); // deposits main rectangle in vector
+	double area = gveto_check(lc, p, -1.0, false); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if (indx1<2) // mainwall
-	    double d = mainwall_check(lc, allPlanes.at(indx1), area);
+	    double d = mainwall_check(lc, allPlanes.at(indx1), area, true);
 	  else if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // should be set to xwall then
-	    double d = xwall_check(lc, allPlanes.at(indx1), area);
+	    double d = xwall_check(lc, allPlanes.at(indx1), area, true);
 	  if (indx2 > 0) // can only be xwall since mainwall checked first
-	    double d = xwall_check(lc, allPlanes.at(indx2), area);
+	    double d = xwall_check(lc, allPlanes.at(indx2), area, true);
 	}
       }
     }
@@ -533,49 +533,49 @@ void VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p, i
 
     if (p.planeid<2) { // main wall
       if (point_plane_check_x(centre, p.side)) { // best fit hits this plane
-	double area = mainwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	double area = mainwall_check_helix(hc, p, -1.0, false); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // xwall
-	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area);
+	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area, true);
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
-	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area);
+	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area, true);
 	  if (indx2 > 0) // can only be gveto since xwall checked first
-	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area);
+	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area, true);
 	} 
       }
     }
     else if ((p.planeid>=2 && p.planeid<4) || (p.planeid>=6 && p.planeid<8)) { // xwall
       if (point_plane_check_y(centre, side)) { // best fit hits this plane
-	double area = xwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	double area = xwall_check_helix(hc, p, -1.0, false); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if (indx1<2) // mainwall
-	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area);
+	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area, true);
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
-	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area);
+	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area, true);
 	  if (indx2 > 0) // can only be gveto since mainwall checked first
-	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area);
+	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area, true);
 	}
       }
     }
     else { // gveto
       if (point_plane_check_z(centre, side)) { // best fit hits this plane
-	double area = gveto_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	double area = gveto_check_helix(hc, p, -1.0, false); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if (indx1<2) // mainwall
-	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area);
+	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area, true);
 	  else if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // should be set to xwall then
-	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area);
+	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area, true);
 	  if (indx2 > 0) // can only be xwall since mainwall checked first
-	    double d = xwall_check_helix(hc, allPlanes.at(indx2), area);
+	    double d = xwall_check_helix(hc, allPlanes.at(indx2), area, true);
 	}
       }
     }
@@ -786,7 +786,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d& h, Plane
 // Checking section
 // ****************
 // line checks
-double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, double area)
+double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, double area, bool singlewall)
 {
   Rectangle spot; // into vector calovertex
   Interval a1;
@@ -808,51 +808,87 @@ double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, doub
   spot.axis3.clear();
   
   // axis 1 of rectangle
-  if (point_plane_check_x(isec1, p.side)) // -y error
+  if (point_plane_check_x(isec1, p.side)) { // -y error
     (p.side==0) ? a1.setlow(isec1.y()) : a1.sethigh(isec1.y());
-  else {
-    (p.side==1) ? a1.setlow(ybound.from()) : a1.sethigh(ybound.to());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
+    //    std::cout << "xwall isec1 check x passed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
   }
-  std::cout << "spot axis1 part 1: (" << a1.from() << ", " << a1.to() << ")" << std::endl;
+  else {
+    (p.side==0) ? a1.setlow(ybound.from()) : a1.sethigh(ybound.to());
+    if (spot.neighbourindex.first<0) { // identify one of four xwalls
+      if (isec1.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec1.y()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 3 : 7);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 2 : 6);
+    }
+    //    std::cout << "mainwall isec1 check x failed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
+  }
+  //  std::cout << "spot axis1 part 1: (" << a1.from() << ", " << a1.to() << ")" << std::endl;
   if (point_plane_check_x(isec2, p.side)) // +y error
     (p.side==0) ? a1.sethigh(isec2.y()) : a1.setlow(isec2.y());
   else {
-    (p.side==1) ? a1.sethigh(ybound.to()) : a1.setlow(ybound.from());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 3 : 2);
+    (p.side==0) ? a1.sethigh(ybound.to()) : a1.setlow(ybound.from());
+    if (spot.neighbourindex.first<0) { // identify one of four xwalls
+      if (isec2.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec2.y()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 3 : 7);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 2 : 6);
+    }
   }  
-  std::cout << "full spot axis1: (" << a1.from() << ", " << a1.to() << ")" << std::endl;
+  //  std::cout << "full spot axis1: (" << a1.from() << ", " << a1.to() << ")" << std::endl;
   
   // axis 2 of rectangle
   if (point_plane_check_x(isec3, p.side)) // -z error
     (p.side==0) ? a2.setlow(isec3.z()) : a2.sethigh(isec3.z());
   else {
-    (p.side==1) ? a2.setlow(zbound.from()) : a2.sethigh(zbound.to());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 4 : 5, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 4 : 5);
+    (p.side==0) ? a2.setlow(zbound.from()) : a2.sethigh(zbound.to());
+    if (spot.neighbourindex.first<0) { // identify one of four gveto
+      if (isec3.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec3.z()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 5 : 9);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 4 : 8);
+    }
   }
   if (point_plane_check_x(isec4, p.side)) // +z error
     (p.side==0) ? a2.sethigh(isec4.z()) : a2.setlow(isec4.z());
   else {
-    (p.side==1) ? a2.sethigh(zbound.to()) : a2.setlow(zbound.from());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 5 : 4, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 5 : 4);
+    (p.side==0) ? a2.sethigh(zbound.to()) : a2.setlow(zbound.from());
+    if (spot.neighbourindex.first<0) { // identify one of four gveto
+      if (isec4.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec4.z()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 5 : 9);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 4 : 8);
+    }
   }  
+  spot.axis1 = Interval(a1.from(), a1.to());
+  if (singlewall) {
+    a2.setlow(calovertex.front().axis2.from());
+    a2.sethigh(calovertex.front().axis2.to());
+    spot.axis2 = Interval(a2.from(), a2.to());
+    spot.neighbourindex = std::make_pair(spot.neighbourindex.first, -1);
+  }
+  else
+    spot.axis2 = Interval(a2.from(), a2.to());
+
   double original_area;
   double width1 = a1.width();
   double width2 = a2.width();
   (area<0.0) ? original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z()) : original_area = area;
   spot.areafraction = (width1 * width2) / original_area;
-  spot.axis1 = Interval(a1.from(), a1.to());
-  spot.axis2 = Interval(a2.from(), a2.to());
+
   calovertex.push_back(spot);
   return original_area;
 }
 
 
-double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double area)
+double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double area, bool singlewall)
 {
   Rectangle spot; // into vector calovertex
   Interval a1;
@@ -861,6 +897,7 @@ double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double 
   Interval xbound_back(allPlanes.at(0).point.x(), 0.0);
   Interval xbound_front(0.0, allPlanes.at(1).point.x());
 
+  //  std::cout << "xwall hit side: " << p.side << " id = " << p.planeid << std::endl;
   ROOT::Math::XYZPoint isec1 = intersect_line_plane(lc.at(0), p);
   ROOT::Math::XYZPoint isec2 = intersect_line_plane(lc.at(1), p);
   ROOT::Math::XYZPoint isec3 = intersect_line_plane(lc.at(2), p);
@@ -875,49 +912,83 @@ double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double 
   spot.axis3.clear();
   
   // axis 1 of rectangle
-  if (point_plane_check_y(isec1, p.side)) // -y error
+  if (point_plane_check_y(isec1, p.side)) { // -y error
     (p.side==1) ? a1.setlow(isec1.x()) : a1.sethigh(isec1.x());
+    std::cout << "xwall isec1 check y passed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
+  }
   else {
-    (p.side==1) ? a1.sethigh(xbound_front.to()) : a1.setlow(xbound_back.from());
+    (p.side==1) ? a1.setlow(xbound_front.to()) : a1.sethigh(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
+    std::cout << "xwall isec1 check y failed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
   }
-  if (point_plane_check_y(isec2, p.side)) // +y error
+  std::cout << "xwall spot axis1 part 1: (" << a1.from() << ", " << a1.to() << ")" << std::endl;
+  if (point_plane_check_y(isec2, p.side)) { // +y error
     (p.side==1) ? a1.sethigh(isec2.x()) : a1.setlow(isec2.x());
+    std::cout << "xwall isec2 check y passed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
+  }
   else {
     (p.side==1) ? a1.sethigh(xbound_front.to()) : a1.setlow(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
+  std::cout << "xwall full spot axis1: (" << a1.from() << ", " << a1.to() << ")" << std::endl;
   
   // axis 2 of rectangle
-  if (point_plane_check_y(isec3, p.side)) // -z error
-    (p.side==0) ? a2.setlow(isec3.z()) : a2.sethigh(isec3.z());
+  if (point_plane_check_y(isec3, p.side)) { // -z error
+    (p.side==1) ? a2.setlow(isec3.z()) : a2.sethigh(isec3.z());
+    std::cout << "xwall isec3 check y passed: (" << a2.from() << ", " << a2.to() << ") side = " << p.side << std::endl;
+  }
   else {
     (p.side==1) ? a2.setlow(zbound.from()) : a2.sethigh(zbound.to());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 4 : 5, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 4 : 5);
+    if (spot.neighbourindex.first<0) { // identify one of four gveto
+      if (isec3.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec3.z()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 5 : 9);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 4 : 8);
+    }
+    std::cout << "xwall isec3 check y failed: (" << a2.from() << ", " << a2.to() << ") side = " << p.side << std::endl;
   }
 
-  if (point_plane_check_y(isec4, p.side)) // +z error
-    (p.side==0) ? a2.sethigh(isec4.z()) : a2.setlow(isec4.z());
+  if (point_plane_check_y(isec4, p.side)) { // +z error
+    (p.side==1) ? a2.sethigh(isec4.z()) : a2.setlow(isec4.z());
+    std::cout << "xwall isec4 check y passed: (" << a2.from() << ", " << a2.to() << ") side = " << p.side << std::endl;
+  }
   else {
     (p.side==1) ? a2.sethigh(zbound.to()) : a2.setlow(zbound.from());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 5 : 4, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 5 : 4);
+    if (spot.neighbourindex.first<0) { // identify one of four gveto
+      if (isec4.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec4.z()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 5 : 9);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 4 : 8);
+    }
+    std::cout << "xwall isec4 check y failed: (" << a2.from() << ", " << a2.to() << ") side = " << p.side << std::endl;
   }
   
+  spot.axis1 = Interval(a1.from(), a1.to());
+  if (singlewall) {
+    a2.setlow(calovertex.front().axis2.from());
+    a2.sethigh(calovertex.front().axis2.to());
+    spot.axis2 = Interval(a2.from(), a2.to());
+    spot.neighbourindex = std::make_pair(spot.neighbourindex.first, -1);
+  }
+  else
+    spot.axis2 = Interval(a2.from(), a2.to());
+
   double original_area;
   (area<0.0) ? original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.z() - isec3.z()) : original_area = area;
   spot.areafraction = (a1.width() * a2.width()) / original_area;
-  spot.axis1 = Interval(a1.from(), a1.to());
-  spot.axis2 = Interval(a2.from(), a2.to());
+
   calovertex.push_back(spot);
   return original_area;
 }
 
 
-double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double area)
+double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double area, bool singlewall)
 {
   Rectangle spot; // into vector calovertex
   Interval a1;
@@ -943,7 +1014,7 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
   if (point_plane_check_z(isec3, p.side)) // -y error
     (p.side==1) ? a1.setlow(isec3.x()) : a1.sethigh(isec3.x());
   else {
-    (p.side==1) ? a1.sethigh(xbound_front.to()) : a1.setlow(xbound_back.from());
+    (p.side==1) ? a1.setlow(xbound_front.to()) : a1.sethigh(xbound_back.from());
     if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 1 : 0, spot.neighbourindex.second);
     else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 1 : 0);
   }
@@ -960,23 +1031,44 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
     (p.side==0) ? a2.setlow(isec1.y()) : a2.sethigh(isec1.y());
   else {
     (p.side==1) ? a2.setlow(ybound.from()) : a2.sethigh(ybound.to());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 2 : 3, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 2 : 3);
+    if (spot.neighbourindex.first<0) { // identify one of four xwalls
+      if (isec1.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec1.y()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 3 : 7);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 2 : 6);
+    }
   }
 
   if (point_plane_check_z(isec2, p.side)) // +z error
     (p.side==0) ? a2.sethigh(isec2.y()) : a2.setlow(isec2.y());
   else {
     (p.side==1) ? a2.sethigh(ybound.to()) : a2.setlow(ybound.from());
-    if (spot.neighbourindex.first<0) spot.neighbourindex = std::make_pair((p.side==1) ? 3 : 2, spot.neighbourindex.second);
-    else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==1) ? 3 : 2);
+    if (spot.neighbourindex.first<0) { // identify one of four xwalls
+      if (isec2.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
+      else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
+    }
+    else { 
+      if (isec2.y()>0.0) spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 3 : 7);
+      else spot.neighbourindex = std::make_pair(spot.neighbourindex.first, (p.side==0) ? 2 : 6);
+    }
   }
   
+  spot.axis1 = Interval(a1.from(), a1.to());
+  if (singlewall) {
+    a2.setlow(calovertex.front().axis2.from());
+    a2.sethigh(calovertex.front().axis2.to());
+    spot.axis2 = Interval(a2.from(), a2.to());
+    spot.neighbourindex = std::make_pair(spot.neighbourindex.first, -1);
+  }
+  else
+    spot.axis2 = Interval(a2.from(), a2.to());
+
   double original_area;
   (area<0.0) ? original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.x() - isec3.x()) : original_area = area;
   spot.areafraction = (a1.width() * a2.width()) / original_area;
-  spot.axis1 = Interval(a1.from(), a1.to());
-  spot.axis2 = Interval(a2.from(), a2.to());
+
   calovertex.push_back(spot);
   return original_area;
 }
@@ -1000,7 +1092,7 @@ void VertexExtrapolator::zcheck(std::vector<Line3d>& lc, int side)
 }
 
 // Helix checks
-double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area)
+double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area, bool singlewall)
 {
   Rectangle spot; // into vector calovertex
   Interval a1;
@@ -1059,7 +1151,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
 }
 
 
-double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area)
+double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, double area, bool singlewall)
 {
   Rectangle spot; // into vector calovertex
   Interval a1;
@@ -1120,7 +1212,7 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
 }
 
 
-double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, double area)
+double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, double area, bool singlewall)
 {
   Rectangle spot; // into vector calovertex
   Interval a1;

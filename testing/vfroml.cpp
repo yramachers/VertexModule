@@ -118,11 +118,11 @@ LineFit lineA() { // artificial line fit solution
   lf.ixy = 0.0;
   lf.ixz = 0.0; // intercept origin
   lf.slxy = 1.0;
-  lf.slxz = 0.0; // diagonal up in y
+  lf.slxz = 0.0; // diagonal up in y, flat in z
   lf.errixy = 0.5;
   lf.errixz = 0.5; // half in intercept y, z
-  lf.errslxy = 0.2; // slopes [0.8, 1.2]
-  lf.errslxz = 0.2; // 20% error in y, z slopes
+  lf.errslxy = 0.2; 
+  lf.errslxz = 0.2; // some error in y, z slopes
   lf.status = 0;
   lf.clid = 1;
   return lf;
@@ -161,7 +161,35 @@ LineFit lineE() { // artificial line fit solution
 LineFit lineF() { // artificial line fit solution
   LineFit lf = lineA();
   lf.slxy = 0.0;
-  lf.slxy = -10.0;
+  lf.slxz = -10.0;
+  return lf;
+}
+
+
+LineFit borderxwall() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = 5.75;
+  return lf;
+}
+
+
+LineFit bordermwall() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = 5.9;
+  return lf;
+}
+
+
+LineFit borderxwall_low() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = -5.75;
+  return lf;
+}
+
+
+LineFit bordermwall_low() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = -5.9;
   return lf;
 }
 
@@ -285,6 +313,29 @@ int check_lineFminus(){
 }
 
 
+int check_bxwall(){
+  LineFit lf = borderxwall(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_bmwall(){
+  LineFit lf = bordermwall(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_bxwall_low(){
+  LineFit lf = borderxwall_low(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_bmwall_low(){
+  LineFit lf = bordermwall_low(); // set vertex info
+  return check_line(lf);
+}
+
 
 
 TEST_CASE( "Line A", "[falaise][planecheck1]" ) {
@@ -333,5 +384,21 @@ TEST_CASE( "Line F", "[falaise][planecheck10]" ) {
 
 TEST_CASE( "Line F-", "[falaise][planecheck11]" ) {
   REQUIRE( check_lineFminus() == 1 );
+}
+
+TEST_CASE( "Border xwall", "[falaise][planecheck12]" ) {
+  REQUIRE( check_bxwall() == 2 );
+}
+
+TEST_CASE( "Border mainwall", "[falaise][planecheck13]" ) {
+  REQUIRE( check_bmwall() == 2 );
+}
+
+TEST_CASE( "Border xwall low", "[falaise][planecheck14]" ) {
+  REQUIRE( check_bxwall_low() == 2 );
+}
+
+TEST_CASE( "Border mainwall low", "[falaise][planecheck15]" ) {
+  REQUIRE( check_bmwall_low() == 2 );
 }
 
