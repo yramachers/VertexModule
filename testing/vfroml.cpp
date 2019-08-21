@@ -194,6 +194,14 @@ LineFit bordermwall_low() { // artificial line fit solution
 }
 
 
+LineFit bordergveto() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxz = 3.6; // diagonal up
+  return lf;
+}
+
+
+
 void printve(VertexExtrapolator& ve) {
   // Results
   Rectangle fvertex = ve.onfoil();
@@ -361,6 +369,12 @@ int minus_bmwall_low(){
 }
 
 
+int check_bgveto(){
+  LineFit lf = bordergveto(); // set vertex info
+  return check_line(lf);
+}
+
+
 
 TEST_CASE( "Line A", "[falaise][planecheck1]" ) {
   REQUIRE( check_lineA() == 1 );
@@ -440,5 +454,9 @@ TEST_CASE( "Border neg xwall low", "[falaise][planecheck18]" ) {
 
 TEST_CASE( "Border neg mainwall low", "[falaise][planecheck19]" ) {
   REQUIRE( minus_bmwall_low() == 2 );
+}
+
+TEST_CASE( "Border gveto", "[falaise][planecheck20]" ) {
+  REQUIRE( check_bgveto() == 2 );
 }
 
