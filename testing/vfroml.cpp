@@ -202,6 +202,30 @@ LineFit bordergveto() { // artificial line fit solution
 
 
 
+LineFit bordermwallgveto() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxz = 3.5; // diagonal up
+  return lf;
+}
+
+
+
+LineFit bordergvetolow() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxz = -3.6; // diagonal down
+  return lf;
+}
+
+
+
+LineFit bordermwallgvetolow() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxz = -3.5; // diagonal down
+  return lf;
+}
+
+
+
 void printve(VertexExtrapolator& ve) {
   // Results
   Rectangle fvertex = ve.onfoil();
@@ -375,6 +399,48 @@ int check_bgveto(){
 }
 
 
+int check_bmg(){
+  LineFit lf = bordermwallgveto(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_bgveto_low(){
+  LineFit lf = bordergvetolow(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_bmg_low(){
+  LineFit lf = bordermwallgvetolow(); // set vertex info
+  return check_line(lf);
+}
+
+
+int minus_bgveto(){
+  LineFit lf = bordergveto(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_bmg(){
+  LineFit lf = bordermwallgveto(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_bgveto_low(){
+  LineFit lf = bordergvetolow(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_bmg_low(){
+  LineFit lf = bordermwallgvetolow(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
 
 TEST_CASE( "Line A", "[falaise][planecheck1]" ) {
   REQUIRE( check_lineA() == 1 );
@@ -458,5 +524,33 @@ TEST_CASE( "Border neg mainwall low", "[falaise][planecheck19]" ) {
 
 TEST_CASE( "Border gveto", "[falaise][planecheck20]" ) {
   REQUIRE( check_bgveto() == 2 );
+}
+
+TEST_CASE( "Border mwall gveto", "[falaise][planecheck21]" ) {
+  REQUIRE( check_bmg() == 2 );
+}
+
+TEST_CASE( "Border gveto low", "[falaise][planecheck22]" ) {
+  REQUIRE( check_bgveto_low() == 2 );
+}
+
+TEST_CASE( "Border mwall gveto low", "[falaise][planecheck23]" ) {
+  REQUIRE( check_bmg_low() == 2 );
+}
+
+TEST_CASE( "Border neg gveto", "[falaise][planecheck24]" ) {
+  REQUIRE( minus_bgveto() == 2 );
+}
+
+TEST_CASE( "Border neg mwall gveto", "[falaise][planecheck25]" ) {
+  REQUIRE( minus_bmg() == 2 );
+}
+
+TEST_CASE( "Border neg gveto low", "[falaise][planecheck26]" ) {
+  REQUIRE( minus_bgveto_low() == 2 );
+}
+
+TEST_CASE( "Border neg mwall gveto low", "[falaise][planecheck27]" ) {
+  REQUIRE( minus_bmg_low() == 2 );
 }
 
