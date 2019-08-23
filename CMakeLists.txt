@@ -43,8 +43,18 @@ include_directories(. testing)
 add_executable(vfroml testing/vfroml.cpp)
 target_link_libraries(vfroml PUBLIC Catch VertexAlgorithm)
 
+# add test executable
+include_directories(. testing)
+add_executable(vfromh testing/vfromh.cpp)
+target_link_libraries(vfromh PUBLIC Catch VertexAlgorithm)
+
 # CTest comand
 add_test(NAME vfroml
   COMMAND vfroml -s
+)
+
+# CTest comand
+add_test(NAME vfromh
+  COMMAND vfromh -s
 )
 
