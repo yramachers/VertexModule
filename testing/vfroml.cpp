@@ -233,6 +233,45 @@ LineFit cornerup() { // artificial line fit solution
 }
 
 
+LineFit cornerupleft() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = -5.75; // diagonal up
+  lf.slxz = 3.5; // diagonal up
+  return lf;
+}
+
+
+LineFit cornerdown() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = -5.75; // diagonal down
+  lf.slxz = -3.5; // diagonal down
+  return lf;
+}
+
+
+LineFit cornerdownright() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = 5.75; // diagonal down
+  lf.slxz = -3.5; // diagonal down
+  return lf;
+}
+
+
+LineFit cornerupxwall() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = 5.9; // diagonal up
+  lf.slxz = 3.5; // diagonal up
+  return lf;
+}
+
+
+LineFit cornerupgveto() { // artificial line fit solution
+  LineFit lf = lineA();
+  lf.slxy = 5.75; // diagonal up
+  lf.slxz = 3.6; // diagonal up
+  return lf;
+}
+
 
 void printve(VertexExtrapolator& ve) {
   // Results
@@ -455,6 +494,54 @@ int check_cornerup(){
 }
 
 
+int minus_cornerup(){
+  LineFit lf = cornerup(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int check_cornerupleft(){
+  LineFit lf = cornerupleft(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_cornerdown(){
+  LineFit lf = cornerdown(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_cornerdright(){
+  LineFit lf = cornerdownright(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_cornerupxwall(){
+  LineFit lf = cornerupxwall(); // set vertex info
+  return check_line(lf);
+}
+
+
+int check_cornerupgveto(){
+  LineFit lf = cornerupgveto(); // set vertex info
+  return check_line(lf);
+}
+
+
+int minus_cornerupxwall(){
+  LineFit lf = cornerupxwall(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
+int minus_cornerupgveto(){
+  LineFit lf = cornerupgveto(); // set vertex info
+  return check_lineminus(lf);
+}
+
+
 
 TEST_CASE( "Line A", "[falaise][planecheck1]" ) {
   REQUIRE( check_lineA() == 1 );
@@ -570,5 +657,37 @@ TEST_CASE( "Border neg mwall gveto low", "[falaise][planecheck27]" ) {
 
 TEST_CASE( "Corner up front", "[falaise][planecheck28]" ) {
   REQUIRE( check_cornerup() == 3 );
+}
+
+TEST_CASE( "Corner up left", "[falaise][planecheck29]" ) {
+  REQUIRE( check_cornerupleft() == 3 );
+}
+
+TEST_CASE( "Corner down front", "[falaise][planecheck30]" ) {
+  REQUIRE( check_cornerdown() == 3 );
+}
+
+TEST_CASE( "Corner down right", "[falaise][planecheck31]" ) {
+  REQUIRE( check_cornerdright() == 3 );
+}
+
+TEST_CASE( "Corner neg up front", "[falaise][planecheck32]" ) {
+  REQUIRE( minus_cornerup() == 3 );
+}
+
+TEST_CASE( "Corner up xwall", "[falaise][planecheck33]" ) {
+  REQUIRE( check_cornerupxwall() == 3 );
+}
+
+TEST_CASE( "Corner up gveto", "[falaise][planecheck34]" ) {
+  REQUIRE( check_cornerupgveto() == 3 );
+}
+
+TEST_CASE( "Corner neg up xwall", "[falaise][planecheck35]" ) {
+  REQUIRE( minus_cornerupxwall() == 3 );
+}
+
+TEST_CASE( "Corner neg up gveto", "[falaise][planecheck36]" ) {
+  REQUIRE( minus_cornerupgveto() == 3 );
 }
 
