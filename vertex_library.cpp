@@ -222,7 +222,7 @@ double VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int si
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
 	    sum_area = gveto_check(lc, allPlanes.at(indx1), area);
 	  if (indx2 > 0) // can only be gveto since xwall checked first
-	    sum_area = gveto_check(lc, allPlanes.at(indx2), area);
+	    sum_area = gveto_check(lc, allPlanes.at(indx2), sum_area);
 	} 
       }
     }
@@ -238,7 +238,7 @@ double VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int si
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
 	    sum_area = gveto_check(lc, allPlanes.at(indx1), area);
 	  if (indx2 > 0) // can only be gveto since mainwall checked first
-	    sum_area = gveto_check(lc, allPlanes.at(indx2), area);
+	    sum_area = gveto_check(lc, allPlanes.at(indx2), sum_area);
 	}
       }
     }
@@ -254,7 +254,7 @@ double VertexExtrapolator::set_calospot(std::vector<Line3d>& lc, Plane p, int si
 	  else if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // should be set to xwall then
 	    sum_area = xwall_check(lc, allPlanes.at(indx1), area);
 	  if (indx2 > 0) // can only be xwall since mainwall checked first
-	    sum_area = xwall_check(lc, allPlanes.at(indx2), area);
+	    sum_area = xwall_check(lc, allPlanes.at(indx2), sum_area);
 	}
       }
     }
@@ -534,6 +534,8 @@ void VertexExtrapolator::set_foilspot_helix(std::vector<Helix3d>& hc) {
 
 double VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side)
 {
+  double area;
+  double sum_area = 0.0;
   // this sets rectangle axes for calovertex, the calorimeter rectangle container
   // depending on which unique plane is intersected by the best fit helix
   
@@ -556,53 +558,55 @@ double VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p,
 
     if (p.planeid<2) { // main wall
       if (point_plane_check_x(centre, true) && point_plane_check_x(centre, false)) { // best fit hits this plane in both axes
-	double area = mainwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	area = mainwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // xwall
-	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area);
+	    sum_area = xwall_check_helix(hc, allPlanes.at(indx1), area);
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
-	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area);
+	    sum_area = gveto_check_helix(hc, allPlanes.at(indx1), area);
 	  if (indx2 > 0) // can only be gveto since xwall checked first
-	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area);
+	    sum_area = gveto_check_helix(hc, allPlanes.at(indx2), sum_area);
 	} 
       }
     }
     else if ((p.planeid>=2 && p.planeid<4) || (p.planeid>=6 && p.planeid<8)) { // xwall
       if (point_plane_check_y(centre, side, true) && point_plane_check_y(centre, side, false)) { // best fit hits this plane in both axes
-	double area = xwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	area = xwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if (indx1<2) // mainwall
-	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area);
+	    sum_area = mainwall_check_helix(hc, allPlanes.at(indx1), area);
 	  else if ((indx1>=4 && indx1<6) || (indx1>=8 && indx1<10)) // should be set to gveto then
-	    double d = gveto_check_helix(hc, allPlanes.at(indx1), area);
+	    sum_area = gveto_check_helix(hc, allPlanes.at(indx1), area);
 	  if (indx2 > 0) // can only be gveto since mainwall checked first
-	    double d = gveto_check_helix(hc, allPlanes.at(indx2), area);
+	    sum_area = gveto_check_helix(hc, allPlanes.at(indx2), sum_area);
 	}
       }
     }
     else { // gveto
       if (point_plane_check_z(centre, side, true) && point_plane_check_z(centre, side, false)) { // best fit hits this plane in both axes
-	double area = gveto_check_helix(hc, p, -1.0); // deposits main rectangle in vector
+	area = gveto_check_helix(hc, p, -1.0); // deposits main rectangle in vector
 	if (calovertex.back().areafraction<1.0) { // overlaps with another wall
 	  // check neighbour walls
 	  int indx1 = calovertex.back().neighbourindex.first;
 	  int indx2 = calovertex.back().neighbourindex.second;
 	  if (indx1<2) // mainwall
-	    double d = mainwall_check_helix(hc, allPlanes.at(indx1), area);
+	    sum_area = mainwall_check_helix(hc, allPlanes.at(indx1), area);
 	  else if ((indx1>=2 && indx1<4) || (indx1>=6 && indx1<8)) // should be set to xwall then
-	    double d = xwall_check_helix(hc, allPlanes.at(indx1), area);
+	    sum_area = xwall_check_helix(hc, allPlanes.at(indx1), area);
 	  if (indx2 > 0) // can only be xwall since mainwall checked first
-	    double d = xwall_check_helix(hc, allPlanes.at(indx2), area);
+	    sum_area = xwall_check_helix(hc, allPlanes.at(indx2), sum_area);
 	}
       }
     }
   } // correct side, otherwise do nothing
+  //  std::cout << "wrong plane side, returns." << std::endl;
+  return sum_area==0.0 ? area : sum_area;
 }
 
 
