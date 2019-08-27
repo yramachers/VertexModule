@@ -1,13 +1,10 @@
 // us
 #include <vertex_library.h>
 
-// ROOT includes
-#include <TMath.h>
-
-
 // std
 #include <iostream>
 #include <algorithm>
+#include <cmath>
 
 
 // *****************************
@@ -369,6 +366,7 @@ void VertexExtrapolator::intersect_brokenline()
 // ************
 void VertexExtrapolator::intersect_helix()
 {
+  double sum_area = 0.0;
   int side = info.side;
   std::vector<ROOT::Math::XYZPoint> isecs;
   std::vector<int> idcollection;
@@ -397,6 +395,7 @@ void VertexExtrapolator::intersect_helix()
     else
       current.charge = 0; // undecided
   }
+  std::cout << "made charge: " << current.charge << std::endl;
 
   // piercing planes from here
   std::vector<Helix3d> hc = helixcollection(current.charge);
@@ -411,8 +410,22 @@ void VertexExtrapolator::intersect_helix()
 
     // calo spots - determined by centre fit helix intersecting exactly one calo wall
     // and left-overs on other planes, if any
-    for (Plane p : allPlanes)
-      set_calospot_helix(hc, p, side); 
+    for (Plane p : allPlanes) {
+      double d = set_calospot_helix(hc, p, side); 
+      if (d>0.0) 
+	sum_area += d;
+    }
+    // correct the calo vertex entries to proper area fractions
+    for (unsigned int i=0; i<calovertex.size(); i++) 
+      calovertex.at(i).areafraction = (calovertex.at(i).axis1.width() * calovertex.at(i).axis2.width()) / sum_area;
+
+    // no wire vertex
+    wirevertex.axis1.clear(); // zero axes
+    wirevertex.axis2.clear();
+    wirevertex.axis3.clear();
+    wirevertex.planeid= -1;
+    wirevertex.side   = -1;
+    wirevertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
   }
   else if (info.foilcalo.first && !info.foilcalo.second) {
     // vertex on foil
@@ -432,8 +445,14 @@ void VertexExtrapolator::intersect_helix()
 
     set_wirevertex(foilside);
 
-    for (Plane p : allPlanes)
-      set_calospot_helix(hc, p, side); 
+    for (Plane p : allPlanes) {
+      double d = set_calospot_helix(hc, p, side); 
+      if (d>0.0)
+	sum_area += d;
+    }
+    // correct the calo vertex entries to proper area fractions
+    for (unsigned int i=0; i<calovertex.size(); i++)
+      calovertex.at(i).areafraction = (calovertex.at(i).axis1.width() * calovertex.at(i).axis2.width()) / sum_area;
   }
   else {
     // both vertices on wires, empty vertex rectangles
@@ -504,6 +523,10 @@ void VertexExtrapolator::set_foilspot_helix(std::vector<Helix3d>& hc) {
   ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), foil);
   ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), foil);
   ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), foil);
+  std::cout << "helix foil hit: (" << isec1.x() << ", " << isec1.y() << ", " << isec1.z() << ")" << std::endl;
+  std::cout << "helix foil hit: (" << isec2.x() << ", " << isec2.y() << ", " << isec2.z() << ")" << std::endl;
+  std::cout << "helix foil hit: (" << isec3.x() << ", " << isec3.y() << ", " << isec3.z() << ")" << std::endl;
+  std::cout << "helix foil hit: (" << isec4.x() << ", " << isec4.y() << ", " << isec4.z() << ")" << std::endl;
   
   // axis1 along y
   if (point_plane_check_x(isec1, true)) 
@@ -554,8 +577,11 @@ double VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p,
 
   if (side == p.side) { // only planes on the correct side
     ROOT::Math::XYZPoint centre = intersect_helix_plane(best, p);
-    if (centre.x()>10000.0 || centre.y()>10000.0 || centre.z()>10000.0) return 0.0;; // no intersection signature, end here
-
+    std::cout << "hit side: " << p.side << " id = " << p.planeid << std::endl;
+    if (centre.x()>10000.0 || centre.y()>10000.0 || centre.z()>10000.0) {
+      //      std::cout << "no intersection, return 0" << std::endl;
+      return 0.0;; // no intersection signature, end here
+    }
     if (p.planeid<2) { // main wall
       if (point_plane_check_x(centre, true) && point_plane_check_x(centre, false)) { // best fit hits this plane in both axes
 	area = mainwall_check_helix(hc, p, -1.0); // deposits main rectangle in vector
@@ -631,7 +657,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_plane(Helix3d& h, Plane
 
 double VertexExtrapolator::Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2) 
 {
-  return TMath::Sqrt((p2-p1).Mag2()); // distance
+  return std::sqrt((p2-p1).Mag2()); // distance
 }
 
 
@@ -645,16 +671,18 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d& h, Plane
   double xc = h.point.x(); // helix centre x
   double r  = h.radius;
   double arg = (x0 - xc) / r;
-  if (fabs(arg)>=1)  // not hitting main wall
-    return imin.SetXYZ(10001.0, 0.0, 0.0); // empty
-
+  if (fabs(arg)>=1) { // not hitting main wall
+    imin.SetXYZ(10001.0, 0.0, 0.0); // empty
+    return imin;
+  }
   double pitch = h.pitch;
-  double t  =  TMath::ACos(arg);
-
-  double y  = h.point.y() + TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
-  double y2 = h.point.y() - TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
-  double z  = h.point.z() + pitch * t  / (2.0 * TMath::Pi());
-  double z2 = h.point.z() - pitch * t  / (2.0 * TMath::Pi());
+  double t  = std::asin(arg);
+  double pi = std::acos(-1.0);
+  //  std::cout << "z-inputs: x0-xc= " << (x0-xc) << " arg=" << arg << ", t=" << t << " pitch=" << pitch << std::endl;
+  double y  = h.point.y() + std::sqrt(r*r - (x0-xc)*(x0-xc));
+  double y2 = h.point.y() - std::sqrt(r*r - (x0-xc)*(x0-xc));
+  double z  = h.point.z() + pitch * t  / (2.0 * pi);
+  double z2 = h.point.z() - pitch * t  / (2.0 * pi);
   ROOT::Math::XYZPoint i(x0,y,z);
   pointcollection.push_back(i);
   ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
@@ -695,16 +723,20 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_foil(Helix3d& h, Plane 
   double xc = h.point.x(); // helix centre x
   double r  = h.radius;
   double arg = (x0 - xc) / r;
-  if (fabs(arg)>=1)  // not hitting foil
-    return imin.SetXYZ(10001.0, 0.0, 0.0); // empty
+  if (fabs(arg)>=1) { // not hitting foil
+    imin.SetXYZ(10001.0, 0.0, 0.0); // empty
+    return imin;
+  }
 
   double pitch = h.pitch;
-  double t  =  TMath::ACos(arg);
+  double t  =  std::asin(arg);
+  double pi = std::acos(-1.0);
+  //  std::cout << "foil z-inputs: x0-xc= " << (x0-xc) << " arg=" << arg << ", t=" << t << " pitch=" << pitch << std::endl;
 
-  double y  = h.point.y() + TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
-  double y2 = h.point.y() - TMath::Sqrt(r*r - (x0-xc)*(x0-xc));
-  double z  = h.point.z() + pitch * t  / (2.0 * TMath::Pi());
-  double z2 = h.point.z() - pitch * t  / (2.0 * TMath::Pi());
+  double y  = h.point.y() + std::sqrt(r*r - (x0-xc)*(x0-xc));
+  double y2 = h.point.y() - std::sqrt(r*r - (x0-xc)*(x0-xc));
+  double z  = h.point.z() + pitch * t  / (2.0 * pi);
+  double z2 = h.point.z() - pitch * t  / (2.0 * pi);
   ROOT::Math::XYZPoint i(x0,y,z);
   pointcollection.push_back(i);
   ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
@@ -742,18 +774,22 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d& h, Plane
   ROOT::Math::XYZPoint imin;
   // parameter
   double y0 = p.point.y(); //  coordinate of xwall
-  double yc = h.point.y(); // helix centre x
+  double yc = h.point.y(); // helix centre y
   double r  = h.radius;
   double pitch = h.pitch;
+  double pi = std::acos(-1.0);
   double arg = (y0 - yc);
-  if (arg / r >= 1)  // not hitting xwall
-    return imin.SetXYZ(0.0, 10001.0, 0.0); // empty
 
-  double t  =  TMath::ACos(1/r * TMath::Sqrt(r*r - arg*arg));
-  double x  = h.point.x() + TMath::Sqrt(r*r - arg*arg);
-  double x2 = h.point.x() - TMath::Sqrt(r*r - arg*arg);
-  double z  = h.point.z() + pitch * t / (2.0 * TMath::Pi());
-  double z2 = h.point.z() - pitch * t / (2.0 * TMath::Pi());
+  if (fabs(arg) / r >= 1) { // not hitting xwall
+    imin.SetXYZ(0.0, 10001.0, 0.0); // empty
+    return imin;
+  }
+
+  double t  =  std::asin(1/r * std::sqrt(r*r - arg*arg));
+  double x  = h.point.x() + std::sqrt(r*r - arg*arg);
+  double x2 = h.point.x() - std::sqrt(r*r - arg*arg);
+  double z  = h.point.z() + pitch * t / (2.0 * pi);
+  double z2 = h.point.z() - pitch * t / (2.0 * pi);
   ROOT::Math::XYZPoint i(x,y0,z); // four piercing points
   ROOT::Math::XYZPoint i2(x2,y0,z);
   ROOT::Math::XYZPoint i3(x,y0,z2);
@@ -796,17 +832,26 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_gveto(Helix3d& h, Plane
 {
   ROOT::Math::XYZPoint i; // just one point piercing z-plane
   // parameter
-  double z0 = p.point.y(); // y coordinate of xwall
-  double zc = h.point.y(); // helix centre x
+  double z0 = p.point.z(); // z coordinate of plane
+  double zc = h.point.z(); // helix centre z
   double r  = h.radius;
   double pitch = h.pitch;
-  double t = (z0 - zc) / pitch;
-  if (t>=1)  // prevent full or more circle spirals to hit z plane
-    return i.SetXYZ(0.0, 0.0, 10001.0); // empty
-  double x  = h.point.x() + r * TMath::Cos(2.0 * TMath::Pi() * t);
-  double y  = h.point.y() + r * TMath::Sin(2.0 * TMath::Pi() * t);
-  
-  return i.SetXYZ(x, y, z0);
+  double pi = std::acos(-1.0);
+  if (fabs(pitch)>0.0) {
+    double t = fabs(z0 - zc) / pitch; // units of 2*pi
+    if (t>=1) { // prevent full or more circle spirals to hit z plane
+      i.SetXYZ(0.0, 0.0, 10001.0); // empty
+      return i;
+    }
+    double x  = h.point.x() + r * std::cos(2.0 * pi * t);
+    double y  = h.point.y() + r * std::sin(2.0 * pi * t);
+    
+    return i.SetXYZ(x, y, z0);
+  }
+  else { // parallel to z plane
+      i.SetXYZ(0.0, 0.0, 10001.0); // empty
+      return i;
+  }
 }
 
 
@@ -1142,6 +1187,10 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
   ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), p);
   ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), p);
   ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), p);
+  std::cout << "helix mwall hit: (" << isec1.x() << ", " << isec1.y() << ", " << isec1.z() << ")" << std::endl;
+  std::cout << "helix mwall hit: (" << isec2.x() << ", " << isec2.y() << ", " << isec2.z() << ")" << std::endl;
+  std::cout << "helix mwall hit: (" << isec3.x() << ", " << isec3.y() << ", " << isec3.z() << ")" << std::endl;
+  std::cout << "helix mwall hit: (" << isec4.x() << ", " << isec4.y() << ", " << isec4.z() << ")" << std::endl;
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
@@ -1186,7 +1235,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
   double width1 = a1.width();
   double width2 = a2.width();
   if (area<0.0) { // first time calculation
-    original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.z() - isec3.z());
+    original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z());
     sumarea = (width1 * width2);
     spot.areafraction = sumarea / original_area; // is there overlap at all -> less than 1
   }
@@ -1196,7 +1245,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
   }
 
   calovertex.push_back(spot);
-  return original_area;
+  return sumarea;
 }
 
 
@@ -1213,6 +1262,10 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), p);
   ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), p);
   ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), p);
+  std::cout << "helix xwall hit: (" << isec1.x() << ", " << isec1.y() << ", " << isec1.z() << ")" << std::endl;
+  std::cout << "helix xwall hit: (" << isec2.x() << ", " << isec2.y() << ", " << isec2.z() << ")" << std::endl;
+  std::cout << "helix xwall hit: (" << isec3.x() << ", " << isec3.y() << ", " << isec3.z() << ")" << std::endl;
+  std::cout << "helix xwall hit: (" << isec4.x() << ", " << isec4.y() << ", " << isec4.z() << ")" << std::endl;
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
@@ -1269,7 +1322,7 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   }
 
   calovertex.push_back(spot);
-  return original_area;
+  return sumarea;
 }
 
 
@@ -1286,6 +1339,10 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   ROOT::Math::XYZPoint isec2 = intersect_helix_plane(hc.at(1), p);
   ROOT::Math::XYZPoint isec3 = intersect_helix_plane(hc.at(2), p);
   ROOT::Math::XYZPoint isec4 = intersect_helix_plane(hc.at(3), p);
+  std::cout << "helix gveto hit: (" << isec1.x() << ", " << isec1.y() << ", " << isec1.z() << ")" << std::endl;
+  std::cout << "helix gveto hit: (" << isec2.x() << ", " << isec2.y() << ", " << isec2.z() << ")" << std::endl;
+  std::cout << "helix gveto hit: (" << isec3.x() << ", " << isec3.y() << ", " << isec3.z() << ")" << std::endl;
+  std::cout << "helix gveto hit: (" << isec4.x() << ", " << isec4.y() << ", " << isec4.z() << ")" << std::endl;
   spot.planeid = p.planeid;
   spot.side = p.side;
   spot.neighbourindex = std::make_pair(-1,-1);
@@ -1332,7 +1389,7 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   double width1 = a1.width();
   double width2 = a2.width();
   if (area<0.0) { // first time calculation
-    original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.z() - isec3.z());
+    original_area = fabs(isec2.x() - isec1.x()) * fabs(isec4.y() - isec3.y());
     sumarea = (width1 * width2);
     spot.areafraction = sumarea / original_area; // is there overlap at all -> less than 1
   }
@@ -1342,7 +1399,7 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   }
 
   calovertex.push_back(spot);
-  return original_area;
+  return sumarea;
 }
 
 
