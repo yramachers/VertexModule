@@ -141,6 +141,34 @@ void centralhits(VertexInfo& vi) {
   vi.maxy.push_back(mi);
 }
 
+void centralhits_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // on side = 0
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // central
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // on side = 0
+  mi.row = 57; // only used for checks at 0 and 112
+  mi.column = 8; // a maximum geiger hit
+  mi.wirex = -412.0; // not quite but irrelevant here
+  mi.wirey = 44.0; // central + 1 up
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
 HelixFit helixA() { // artificial helix fit solution
   HelixFit hf;
   hf.radius = 5000.0; // compare to y centre
@@ -159,11 +187,11 @@ HelixFit helixA() { // artificial helix fit solution
 }
 
 
-// HelixFit helixB() { // artificial helix fit solution
-//   HelixFit hf = helixA();
-//   hf.slxy = 10.0;
-//   return hf;
-// }
+HelixFit helixB() { // artificial helix fit solution
+  HelixFit hf = helixA();
+  hf.xc = -1.0; // side = 0
+  return hf;
+}
 
 
 
@@ -201,6 +229,24 @@ int check_helix(HelixFit hf) {
   return (int)ve.oncalo().size();
 }
 
+int check_helix_left(HelixFit hf) {
+  VertexExtrapolator ve(make_planes());
+  VertexInfo vi;
+  vi.side = 0; // negative x
+  vi.foilcalo = std::make_pair(true, true); // no wire vertices
+  vi.clsid = 1; // same clsid as hook
+  centralhits_left(vi);
+
+  // need an info vector
+  std::vector<VertexInfo> allinfo;
+  allinfo.push_back(vi);
+  // start the work
+  ve.setTrajectory(hf, allinfo); // runs intersect(0) for a helixfit struct
+
+  printve(ve);
+  return (int)ve.oncalo().size();
+}
+
 // int check_helixminus(HelixFit hf) {
 //   VertexExtrapolator ve(make_planes());
 //   VertexInfo vi;
@@ -226,9 +272,19 @@ int check_helixA(){
 }
 
 
+int check_helixB(){
+  HelixFit hf = helixB(); // set vertex info
+  return check_helix_left(hf);
+}
+
+
 
 
 TEST_CASE( "Helix A", "[falaise][helixcheck1]" ) {
   REQUIRE( check_helixA() == 1 );
+}
+
+TEST_CASE( "Helix B", "[falaise][helixcheck2]" ) {
+  REQUIRE( check_helixB() == 1 );
 }
 
