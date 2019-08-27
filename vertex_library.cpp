@@ -676,7 +676,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d& h, Plane
     return imin;
   }
   double pitch = h.pitch;
-  double t  = std::asin(arg);
+  double t  = std::acos(arg);
   double pi = std::acos(-1.0);
   //  std::cout << "z-inputs: x0-xc= " << (x0-xc) << " arg=" << arg << ", t=" << t << " pitch=" << pitch << std::endl;
   double y  = h.point.y() + std::sqrt(r*r - (x0-xc)*(x0-xc));
@@ -685,10 +685,10 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_mainw(Helix3d& h, Plane
   double z2 = h.point.z() - pitch * t  / (2.0 * pi);
   ROOT::Math::XYZPoint i(x0,y,z);
   pointcollection.push_back(i);
-  ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
-  pointcollection.push_back(i2);
-  ROOT::Math::XYZPoint i3(x0,y,z2);
-  pointcollection.push_back(i3);
+  // ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
+  // pointcollection.push_back(i2);
+  // ROOT::Math::XYZPoint i3(x0,y,z2);
+  // pointcollection.push_back(i3);
   ROOT::Math::XYZPoint i4(x0,y2,z2);
   pointcollection.push_back(i4);
   // reduce to one
@@ -729,7 +729,7 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_foil(Helix3d& h, Plane 
   }
 
   double pitch = h.pitch;
-  double t  =  std::asin(arg);
+  double t  =  std::acos(arg);
   double pi = std::acos(-1.0);
   //  std::cout << "foil z-inputs: x0-xc= " << (x0-xc) << " arg=" << arg << ", t=" << t << " pitch=" << pitch << std::endl;
 
@@ -739,10 +739,10 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_foil(Helix3d& h, Plane 
   double z2 = h.point.z() - pitch * t  / (2.0 * pi);
   ROOT::Math::XYZPoint i(x0,y,z);
   pointcollection.push_back(i);
-  ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
-  pointcollection.push_back(i2);
-  ROOT::Math::XYZPoint i3(x0,y,z2);
-  pointcollection.push_back(i3);
+  // ROOT::Math::XYZPoint i2(x0,y2,z);  // four piercing points
+  // pointcollection.push_back(i2);
+  // ROOT::Math::XYZPoint i3(x0,y,z2);
+  // pointcollection.push_back(i3);
   ROOT::Math::XYZPoint i4(x0,y2,z2);
   pointcollection.push_back(i4);
   // reduce to one
@@ -785,18 +785,18 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_xwall(Helix3d& h, Plane
     return imin;
   }
 
-  double t  =  std::asin(1/r * std::sqrt(r*r - arg*arg));
+  double t  =  std::acos(1/r * std::sqrt(r*r - arg*arg));
   double x  = h.point.x() + std::sqrt(r*r - arg*arg);
   double x2 = h.point.x() - std::sqrt(r*r - arg*arg);
   double z  = h.point.z() + pitch * t / (2.0 * pi);
   double z2 = h.point.z() - pitch * t / (2.0 * pi);
   ROOT::Math::XYZPoint i(x,y0,z); // four piercing points
-  ROOT::Math::XYZPoint i2(x2,y0,z);
-  ROOT::Math::XYZPoint i3(x,y0,z2);
+  // ROOT::Math::XYZPoint i2(x2,y0,z);
+  // ROOT::Math::XYZPoint i3(x,y0,z2);
   ROOT::Math::XYZPoint i4(x2,y0,z2);
   pointcollection.push_back(i);
-  pointcollection.push_back(i2);
-  pointcollection.push_back(i3);
+  // pointcollection.push_back(i2);
+  // pointcollection.push_back(i3);
   pointcollection.push_back(i4);
   // reduce to one
   // pick the closest to the collection of xwall-side tracker hits

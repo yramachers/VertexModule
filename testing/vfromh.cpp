@@ -143,10 +143,10 @@ void centralhits(VertexInfo& vi) {
 
 HelixFit helixA() { // artificial helix fit solution
   HelixFit hf;
-  hf.radius = 500.0; // compare to y centre
+  hf.radius = 5000.0; // compare to y centre
   hf.pitch = 0.0; // flat
   hf.xc = 1.0; // on side = 1
-  hf.yc = 501.0; // central helix curve, y in [1,1001]
+  hf.yc = 5001.0; // central helix curve, y in [1,1001]
   hf.zc = 0.0;
   hf.raderr = 1.0; // small
   hf.errpitch = 1.0;  // small
