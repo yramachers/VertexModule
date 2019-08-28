@@ -156,27 +156,41 @@ void VertexExtrapolator::set_foilspot()
     
     Interval ybounds(allPlanes.at(2).point.y(), allPlanes.at(3).point.y());
     Interval zbounds(allPlanes.at(4).point.z(), allPlanes.at(5).point.z());
-    // axis1 along y
-    if (point_plane_check_x(pplusy, true)) 
-      foilvertex.axis1.sethigh(pplusy.y());
-    else 
-      foilvertex.axis1.sethigh(ybounds.to());
-    if (point_plane_check_x(pminusy, true))
-      foilvertex.axis1.setlow(pminusy.y());
-    else 
-      foilvertex.axis1.setlow(ybounds.from());
-    // axis2 along z
-    if (point_plane_check_x(pplusz, false))
-      foilvertex.axis2.sethigh(pplusz.z());
-    else 
-      foilvertex.axis2.sethigh(zbounds.to());      
-    if (point_plane_check_x(pminusz, false))
-      foilvertex.axis2.setlow(pminusz.z());
-    else 
-      foilvertex.axis2.setlow(zbounds.from());
-
+    Interval checky(lf.ixy-lf.errixy, lf.ixy+lf.errixy);
+    Interval checkz(lf.ixz-lf.errixz, lf.ixz+lf.errixz);
+    if (ybounds.overlap(checky)) {
+      // axis1 along y
+      if (point_plane_check_x(pplusy, true)) 
+	foilvertex.axis1.sethigh(pplusy.y());
+      else 
+	foilvertex.axis1.sethigh(ybounds.to());
+      if (point_plane_check_x(pminusy, true))
+	foilvertex.axis1.setlow(pminusy.y());
+      else 
+	foilvertex.axis1.setlow(ybounds.from());
+    }
+    else {
+      foilvertex.axis1.clear();
+    }
+    if (zbounds.overlap(checkz)) {
+      // axis2 along z
+      if (point_plane_check_x(pplusz, false))
+	foilvertex.axis2.sethigh(pplusz.z());
+      else 
+	foilvertex.axis2.sethigh(zbounds.to());      
+      if (point_plane_check_x(pminusz, false))
+	foilvertex.axis2.setlow(pminusz.z());
+      else 
+	foilvertex.axis2.setlow(zbounds.from());
+    }
+    else {
+      foilvertex.axis2.clear();
+    }
     double original_area = fabs(pplusy.y() - pminusy.y()) * fabs(pplusz.z() - pminusz.z());
-    foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+    if (fabs(original_area)>0.0)
+      foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+    else
+      foilvertex.areafraction = 0.0;
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
     foilvertex.axis3.clear();
 }
@@ -528,28 +542,42 @@ void VertexExtrapolator::set_foilspot_helix(std::vector<Helix3d>& hc) {
   std::cout << "helix foil hit: (" << isec3.x() << ", " << isec3.y() << ", " << isec3.z() << ")" << std::endl;
   std::cout << "helix foil hit: (" << isec4.x() << ", " << isec4.y() << ", " << isec4.z() << ")" << std::endl;
   
-  // axis1 along y
-  if (point_plane_check_x(isec1, true)) 
-    foilvertex.axis1.sethigh(isec1.y());
-  else 
-    foilvertex.axis1.sethigh(ybounds.to());
-  if (point_plane_check_x(isec2, true))
-    foilvertex.axis1.setlow(isec2.y());
-  else 
-    foilvertex.axis1.setlow(ybounds.from());
+  Interval checky(isec1.y(),isec2.y());
+  Interval checkz(isec3.z(),isec4.z());
   
-  // axis2 along z
-  if (point_plane_check_x(isec3, false))
-    foilvertex.axis2.sethigh(isec3.z());
-  else 
-    foilvertex.axis2.sethigh(zbounds.to());      
-  if (point_plane_check_x(isec4, false))
-    foilvertex.axis2.setlow(isec4.z());
-  else 
-    foilvertex.axis2.setlow(zbounds.from());
-  
+  if (ybounds.overlap(checky)) {
+    // axis1 along y
+    if (point_plane_check_x(isec1, true)) 
+      foilvertex.axis1.sethigh(isec1.y());
+    else 
+      foilvertex.axis1.sethigh(ybounds.to());
+    if (point_plane_check_x(isec2, true))
+      foilvertex.axis1.setlow(isec2.y());
+    else 
+      foilvertex.axis1.setlow(ybounds.from());
+  }
+  else {
+    foilvertex.axis1.clear();
+  }
+  if (zbounds.overlap(checkz)) {
+    // axis2 along z
+    if (point_plane_check_x(isec3, false))
+      foilvertex.axis2.sethigh(isec3.z());
+    else 
+      foilvertex.axis2.sethigh(zbounds.to());      
+    if (point_plane_check_x(isec4, false))
+      foilvertex.axis2.setlow(isec4.z());
+    else 
+      foilvertex.axis2.setlow(zbounds.from());
+  }
+  else {
+    foilvertex.axis2.clear();
+  }
   double original_area = fabs(isec2.y() - isec1.y()) * fabs(isec4.z() - isec3.z());
-  foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+  if (fabs(original_area)>0.0)
+    foilvertex.areafraction = (foilvertex.axis1.width() * foilvertex.axis2.width()) / original_area;
+  else
+    foilvertex.areafraction = 0.0;
   foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
   foilvertex.axis3.clear();
 }

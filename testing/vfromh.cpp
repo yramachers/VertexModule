@@ -113,7 +113,22 @@ std::vector<Plane> make_planes() {
 }
 
 
-void centralhits(VertexInfo& vi) {
+void printve(VertexExtrapolator& ve) {
+  // Results
+  Rectangle fvertex = ve.onfoil();
+  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
+  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
+
+  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
+  std::cout << "Rectangle on calo: " << std::endl;
+  for (auto& cv : cvertex) {
+    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
+    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+  }
+}
+
+
+void uphits(VertexInfo& vi) {
   // fill the artificial geiger max min information
   MetaInfo mi;
   // min
@@ -141,7 +156,7 @@ void centralhits(VertexInfo& vi) {
   vi.maxy.push_back(mi);
 }
 
-void centralhits_left(VertexInfo& vi) {
+void uphits_left(VertexInfo& vi) {
   // fill the artificial geiger max min information
   MetaInfo mi;
   // min
@@ -169,6 +184,223 @@ void centralhits_left(VertexInfo& vi) {
   vi.maxy.push_back(mi);
 }
 
+void downhits(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // on side = 1
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // central
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // on side = 1
+  mi.row = 55; // only used for checks at 0 and 112
+  mi.column = 8; // a maximum geiger hit
+  mi.wirex = 412.0; // not quite but irrelevant here
+  mi.wirey = -44.0; // central + 1 down
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+void downhits_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // on side = 0
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // central
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // on side = 0
+  mi.row = 55; // only used for checks at 0 and 112
+  mi.column = 8; // a maximum geiger hit
+  mi.wirex = -412.0; // not quite but irrelevant here
+  mi.wirey = -44.0; // central + 1 down
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+void xwallhits(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // on side = 1
+  mi.row = 111; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 2438.0; // top right
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // on side = 1
+  mi.row = 112; // only used for checks at 0 and 112
+  mi.column = 4; // a middle geiger hit
+  mi.wirex = 184.0; // top right middle
+  mi.wirey = 2482.0; // top
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void xwallhits_low(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // on side = 1
+  mi.row = 1; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = -2438.0; // bottom right
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // on side = 1
+  mi.row = 0; // only used for checks at 0 and 112
+  mi.column = 4; // a maximum geiger hit
+  mi.wirex = 184.0; // middle layer
+  mi.wirey = -2482.0; // bottom
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void xwallhits_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // on side = 0
+  mi.row = 111; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = 2438.0; // top right
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // on side = 0
+  mi.row = 112; // only used for checks at 0 and 112
+  mi.column = 4; // a middle geiger hit
+  mi.wirex = -184.0; // top right middle
+  mi.wirey = 2482.0; // top
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void xwallhits_low_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // on side = 0
+  mi.row = 1; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = -2438.0; // bottom right
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // on side = 0
+  mi.row = 0; // only used for checks at 0 and 112
+  mi.column = 4; // a maximum geiger hit
+  mi.wirex = -184.0; // middle layer
+  mi.wirey = -2482.0; // bottom
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+HelixFit hxwall_up() { // artificial helix fit solution
+  HelixFit hf;
+  hf.radius = 500.0; // compare to y centre
+  hf.pitch = 0.0; // flat
+  hf.xc = -70.0;
+  hf.yc = 2930.0; // corner helix curve
+  hf.zc = 0.0;
+  hf.raderr = 1.0; // small
+  hf.errpitch = 1.0;  // small
+  hf.errxc = 2.0; // some error in x, y, z centre
+  hf.erryc = 2.0;
+  hf.errzc = 2.0;
+  hf.status = 0;
+  hf.clid = 1; // id number
+  return hf;
+}
+
+
+HelixFit hxwall_down() { // artificial helix fit solution
+  HelixFit hf = hxwall_up();
+  hf.yc = -2930.0;
+  return hf;
+}
+
+
+HelixFit hxwall_up_left() { // artificial helix fit solution
+  HelixFit hf = hxwall_up();
+  hf.xc = 70.0;
+  return hf;
+}
+
+
+HelixFit hxwall_down_left() { // artificial helix fit solution
+  HelixFit hf = hxwall_up();
+  hf.xc = 70.0;
+  hf.yc = -2930.0;
+  return hf;
+}
+
+
 HelixFit helixA() { // artificial helix fit solution
   HelixFit hf;
   hf.radius = 5000.0; // compare to y centre
@@ -194,30 +426,39 @@ HelixFit helixB() { // artificial helix fit solution
 }
 
 
-
-
-void printve(VertexExtrapolator& ve) {
-  // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
-  }
+HelixFit helixC() { // artificial helix fit solution
+  HelixFit hf = helixA();
+  hf.radius = 4000.0; // compare to y centre
+  hf.yc = -4001.0; // central helix curve, downward
+  return hf;
 }
 
 
-int check_helix(HelixFit hf) {
+HelixFit helixD() { // artificial helix fit solution
+  HelixFit hf = helixA();
+  hf.radius = 4000.0; // compare to y centre
+  hf.yc = -4001.0; // central helix curve, downward
+  hf.xc = -1.0; // side = 0
+  return hf;
+}
+
+
+
+
+int check_helix(HelixFit hf, int which) {
   VertexExtrapolator ve(make_planes());
   VertexInfo vi;
   vi.side = 1; // positive x
   vi.foilcalo = std::make_pair(true, true); // no wire vertices
   vi.clsid = 1; // same clsid as hook
-  centralhits(vi);
+  if (which==0)
+    uphits(vi);
+  else if (which==1)
+    downhits(vi);
+  else if (which==2)
+    xwallhits(vi);
+  else if (which==3)
+    xwallhits_low(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -229,13 +470,20 @@ int check_helix(HelixFit hf) {
   return (int)ve.oncalo().size();
 }
 
-int check_helix_left(HelixFit hf) {
+int check_helix_left(HelixFit hf, int which) {
   VertexExtrapolator ve(make_planes());
   VertexInfo vi;
   vi.side = 0; // negative x
   vi.foilcalo = std::make_pair(true, true); // no wire vertices
   vi.clsid = 1; // same clsid as hook
-  centralhits_left(vi);
+  if (which==0)
+    uphits_left(vi);
+  else if (which==1)
+    downhits_left(vi);
+  else if (which==2)
+    xwallhits_left(vi);
+  else if (which==3)
+    xwallhits_low_left(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -247,34 +495,52 @@ int check_helix_left(HelixFit hf) {
   return (int)ve.oncalo().size();
 }
 
-// int check_helixminus(HelixFit hf) {
-//   VertexExtrapolator ve(make_planes());
-//   VertexInfo vi;
-//   vi.side = 0; // negative x
-//   vi.foilcalo = std::make_pair(true, true); // no wire vertices
-//   vi.clsid = 1; // same clsid as hook
-
-//   // need an info vector
-//   std::vector<VertexInfo> allinfo;
-//   allinfo.push_back(vi);
-
-//   // start the work
-//   ve.setTrajectory(hf, allinfo); // runs intersect(0) for a helixfit struct
-
-//   printve(ve);
-//   return (int)ve.oncalo().size();
-// }
-
 
 int check_helixA(){
   HelixFit hf = helixA(); // set vertex info
-  return check_helix(hf);
+  return check_helix(hf,0);
 }
 
 
 int check_helixB(){
   HelixFit hf = helixB(); // set vertex info
-  return check_helix_left(hf);
+  return check_helix_left(hf,0);
+}
+
+
+int check_helixC(){
+  HelixFit hf = helixC(); // set vertex info
+  return check_helix(hf,1);
+}
+
+
+int check_helixD(){
+  HelixFit hf = helixD(); // set vertex info
+  return check_helix_left(hf,1);
+}
+
+
+int check_xwall_up(){
+  HelixFit hf = hxwall_up(); // set vertex info
+  return check_helix(hf,2);
+}
+
+
+int check_xwall_down(){
+  HelixFit hf = hxwall_down(); // set vertex info
+  return check_helix(hf,3);
+}
+
+
+int left_xwall_up(){
+  HelixFit hf = hxwall_up_left(); // set vertex info
+  return check_helix_left(hf,2);
+}
+
+
+int left_xwall_down(){
+  HelixFit hf = hxwall_down_left(); // set vertex info
+  return check_helix_left(hf,3);
 }
 
 
@@ -286,5 +552,29 @@ TEST_CASE( "Helix A", "[falaise][helixcheck1]" ) {
 
 TEST_CASE( "Helix B", "[falaise][helixcheck2]" ) {
   REQUIRE( check_helixB() == 1 );
+}
+
+TEST_CASE( "Helix C", "[falaise][helixcheck3]" ) {
+  REQUIRE( check_helixC() == 1 );
+}
+
+TEST_CASE( "Helix D", "[falaise][helixcheck4]" ) {
+  REQUIRE( check_helixD() == 1 );
+}
+
+TEST_CASE( "XWall up", "[falaise][helixcheck5]" ) {
+  REQUIRE( check_xwall_up() == 1 );
+}
+
+TEST_CASE( "XWall down", "[falaise][helixcheck6]" ) {
+  REQUIRE( check_xwall_down() == 1 );
+}
+
+TEST_CASE( "left XWall up", "[falaise][helixcheck7]" ) {
+  REQUIRE( left_xwall_up() == 1 );
+}
+
+TEST_CASE( "left XWall down", "[falaise][helixcheck8]" ) {
+  REQUIRE( left_xwall_down() == 1 );
 }
 
