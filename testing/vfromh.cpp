@@ -361,6 +361,170 @@ void xwallhits_low_left(VertexInfo& vi) {
 
 
 
+void gvetohits(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // on side = 1
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // centre
+  mi.zcoord = 1300.0; // top
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // on side = 1
+  mi.row = 57; // only used for checks at 0 and 112
+  mi.column = 4; // a middle geiger hit
+  mi.wirex = 184.0; // right middle
+  mi.wirey = 44.0; // bend upwards
+  mi.zcoord = 1545.0; // top
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void gvetohits_low(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // on side = 1
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // centre
+  mi.zcoord = -1300.0; // bottom
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // on side = 1
+  mi.row = 55; // only used for checks at 0 and 112
+  mi.column = 4; // a maximum geiger hit
+  mi.wirex = 184.0; // middle layer
+  mi.wirey = -44.0; // bend downward
+  mi.zcoord = -1545.0; // bottom
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void gvetohits_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // on side = 0
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // top right
+  mi.zcoord = 1300.0; // top
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // on side = 0
+  mi.row = 57; // only used for checks at 0 and 112
+  mi.column = 4; // a middle geiger hit
+  mi.wirex = -184.0; // top right middle
+  mi.wirey = 44.0; // bend upwards
+  mi.zcoord = 1545.0; // top
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void gvetohits_low_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // on side = 0
+  mi.row = 56; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = 0.0; // bottom right
+  mi.zcoord = -1300.0; // bottom
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // on side = 0
+  mi.row = 55; // only used for checks at 0 and 112
+  mi.column = 4; // a maximum geiger hit
+  mi.wirex = -184.0; // middle layer
+  mi.wirey = -44.0; // bend downwards
+  mi.zcoord = -1545.0; // bottom
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+HelixFit hgveto_up() { // artificial helix fit solution
+  HelixFit hf;
+  hf.radius = 190.0; // compare to y centre
+  hf.pitch = 1000.0; // rising
+  hf.xc = -10.0;
+  hf.yc = 191.0; 
+  hf.zc = 1500.0;
+  hf.raderr = 1.0; // small
+  hf.errpitch = 10.0;
+  hf.errxc = 2.0; // some error in x, y, z centre
+  hf.erryc = 2.0;
+  hf.errzc = 2.0;
+  hf.status = 0;
+  hf.clid = 1; // id number
+  return hf;
+}
+
+
+HelixFit hgveto_down() { // artificial helix fit solution
+  HelixFit hf = hgveto_up();
+  hf.zc = -1500.0;
+  hf.yc = -191.0; 
+  return hf;
+}
+
+
+HelixFit hgveto_up_left() { // artificial helix fit solution
+  HelixFit hf = hgveto_up();
+  hf.xc = -300.0;
+  hf.yc = 191.0;
+  hf.radius = 190.0; // compare to y centre
+  return hf;
+}
+
+
+HelixFit hgveto_down_left() { // artificial helix fit solution
+  HelixFit hf = hgveto_up();
+  hf.xc = -300.0;
+  hf.yc = -191.0; 
+  hf.zc = -1500.0;
+  hf.radius = 190.0; // compare to y centre
+  return hf;
+}
+
+
 HelixFit hxwall_up() { // artificial helix fit solution
   HelixFit hf;
   hf.radius = 500.0; // compare to y centre
@@ -459,6 +623,10 @@ int check_helix(HelixFit hf, int which) {
     xwallhits(vi);
   else if (which==3)
     xwallhits_low(vi);
+  else if (which==4)
+    gvetohits(vi);
+  else if (which==5)
+    gvetohits_low(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -484,6 +652,10 @@ int check_helix_left(HelixFit hf, int which) {
     xwallhits_left(vi);
   else if (which==3)
     xwallhits_low_left(vi);
+  else if (which==4)
+    gvetohits_left(vi);
+  else if (which==5)
+    gvetohits_low_left(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -544,6 +716,30 @@ int left_xwall_down(){
 }
 
 
+int check_gveto_up(){
+  HelixFit hf = hgveto_up(); // set vertex info
+  return check_helix(hf,4);
+}
+
+
+int check_gveto_down(){
+  HelixFit hf = hgveto_down(); // set vertex info
+  return check_helix(hf,5);
+}
+
+
+int left_gveto_up(){
+  HelixFit hf = hgveto_up_left(); // set vertex info
+  return check_helix_left(hf,4);
+}
+
+
+int left_gveto_down(){
+  HelixFit hf = hgveto_down_left(); // set vertex info
+  return check_helix_left(hf,5);
+}
+
+
 
 
 TEST_CASE( "Helix A", "[falaise][helixcheck1]" ) {
@@ -576,5 +772,21 @@ TEST_CASE( "left XWall up", "[falaise][helixcheck7]" ) {
 
 TEST_CASE( "left XWall down", "[falaise][helixcheck8]" ) {
   REQUIRE( left_xwall_down() == 1 );
+}
+
+TEST_CASE( "gveto up", "[falaise][helixcheck9]" ) {
+  REQUIRE( check_gveto_up() == 1 );
+}
+
+TEST_CASE( "gveto down", "[falaise][helixcheck10]" ) {
+  REQUIRE( check_gveto_down() == 1 );
+}
+
+TEST_CASE( "left gveto up", "[falaise][helixcheck11]" ) {
+  REQUIRE( left_gveto_up() == 1 );
+}
+
+TEST_CASE( "left gveto down", "[falaise][helixcheck12]" ) {
+  REQUIRE( left_gveto_down() == 1 );
 }
 

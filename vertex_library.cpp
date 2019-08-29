@@ -410,6 +410,7 @@ void VertexExtrapolator::intersect_helix()
       current.charge = 0; // undecided
   }
   std::cout << "made charge: " << current.charge << std::endl;
+  //  std::cout << "from pbest y: " << pbest.y() << " and lower_bd=" << lower_bd << " and upper_bd=" << upper_bd << std::endl;
 
   // piercing planes from here
   std::vector<Helix3d> hc = helixcollection(current.charge);
@@ -606,8 +607,9 @@ double VertexExtrapolator::set_calospot_helix(std::vector<Helix3d>& hc, Plane p,
   if (side == p.side) { // only planes on the correct side
     ROOT::Math::XYZPoint centre = intersect_helix_plane(best, p);
     std::cout << "hit side: " << p.side << " id = " << p.planeid << std::endl;
+    //    std::cout << "centre at (" << centre.x() << ", " << centre.y() << ", " << centre.z() << ")" << std::endl;
     if (centre.x()>10000.0 || centre.y()>10000.0 || centre.z()>10000.0) {
-      //      std::cout << "no intersection, return 0" << std::endl;
+      std::cout << "no intersection, return 0" << std::endl;
       return 0.0;; // no intersection signature, end here
     }
     if (p.planeid<2) { // main wall
@@ -773,6 +775,10 @@ ROOT::Math::XYZPoint VertexExtrapolator::intersect_helix_foil(Helix3d& h, Plane 
   pointcollection.push_back(i3);
   ROOT::Math::XYZPoint i4(x0,y2,z2);
   pointcollection.push_back(i4);
+  // std::cout << "raw foil hit: (" << i.x() << ", " << i.y() << ", " << i.z() << ")" << std::endl;
+  // std::cout << "raw foil hit: (" << i2.x() << ", " << i2.y() << ", " << i2.z() << ")" << std::endl;
+  // std::cout << "raw foil hit: (" << i3.x() << ", " << i3.y() << ", " << i3.z() << ")" << std::endl;
+  // std::cout << "raw foil hit: (" << i4.x() << ", " << i4.y() << ", " << i4.z() << ")" << std::endl;
   // reduce to one
 
   // pick the closest to the collection of calo-side tracker hits
