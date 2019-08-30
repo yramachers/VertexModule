@@ -480,6 +480,66 @@ void gvetohits_low_left(VertexInfo& vi) {
 
 
 
+void cornerhits_xy(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // positive x
+  mi.row = 110; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 2394.0; // bottom right
+  mi.zcoord = 0.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // positive x
+  mi.row = 112; // only used for checks at 0 and 112
+  mi.column = 8; // a maximum geiger hit
+  mi.wirex = 412.0; // layer 8
+  mi.wirey = 2482.0; // bend downwards
+  mi.zcoord = 0.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void cornerhits_yz(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // positive x
+  mi.row = 110; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 2394.0; // bottom right
+  mi.zcoord = 1500.0; // central
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // positive x
+  mi.row = 112; // only used for checks at 0 and 112
+  mi.column = 4; // a maximum geiger hit
+  mi.wirex = 184.0; // layer 8
+  mi.wirey = 2482.0; // bend downwards
+  mi.zcoord = 1548.0; // central
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
 HelixFit hgveto_up() { // artificial helix fit solution
   HelixFit hf;
   hf.radius = 190.0; // compare to y centre
@@ -531,7 +591,7 @@ HelixFit hxwall_up() { // artificial helix fit solution
   hf.radius = 500.0; // compare to y centre
   hf.pitch = 0.0; // flat
   hf.xc = -70.0;
-  hf.yc = 2930.0; // corner helix curve
+  hf.yc = 2930.0; // small helix curve
   hf.zc = 0.0;
   hf.raderr = 1.0; // small
   hf.errpitch = 1.0;  // small
@@ -609,6 +669,61 @@ HelixFit helixD() { // artificial helix fit solution
 
 
 
+HelixFit hcornerxy() { // corner mainwall xwall
+  HelixFit hf;
+  hf.radius = 608.0; // compare to y centre
+  hf.pitch = 0.0; // flat
+  hf.xc = 0.0;
+  hf.yc = 2930.0; // corner helix curve
+  hf.zc = 0.0;
+  hf.raderr = 2.0; // small
+  hf.errpitch = 2.0;  // small
+  hf.errxc = 10.0; // some error in x, y, z centre
+  hf.erryc = 10.0;
+  hf.errzc = 10.0;
+  hf.status = 0;
+  hf.clid = 1; // id number
+  return hf;
+}
+
+
+HelixFit hcornerxz() { // corner mainwall gveto
+  HelixFit hf;
+  hf.radius = 500.0; // compare to y centre
+  hf.pitch = 120.0; // tilt
+  hf.xc = 0.0;
+  hf.yc = 501.0; // corner helix curve
+  hf.zc = 1560.0;
+  hf.raderr = 2.0; // small
+  hf.errpitch = 20.0;  // small
+  hf.errxc = 10.0; // some error in x, y, z centre
+  hf.erryc = 10.0;
+  hf.errzc = 10.0;
+  hf.status = 0;
+  hf.clid = 1; // id number
+  return hf;
+}
+
+
+HelixFit hcorneryz() { // corner xwall gveto
+  HelixFit hf;
+  hf.radius = 200.0; // compare to y centre
+  hf.pitch = 120.0; // flat
+  hf.xc = 20.0;
+  hf.yc = 2355.0; // corner helix curve
+  hf.zc = 1535.0;
+  hf.raderr = 2.0; // small
+  hf.errpitch = 20.0;  // small
+  hf.errxc = 10.0; // some error in x, y, z centre
+  hf.erryc = 10.0;
+  hf.errzc = 10.0;
+  hf.status = 0;
+  hf.clid = 1; // id number
+  return hf;
+}
+
+
+
 
 int check_helix(HelixFit hf, int which) {
   VertexExtrapolator ve(make_planes());
@@ -628,6 +743,10 @@ int check_helix(HelixFit hf, int which) {
     gvetohits(vi);
   else if (which==5)
     gvetohits_low(vi);
+  else if (which==6)
+    cornerhits_xy(vi);
+  else if (which==7)
+    cornerhits_yz(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -741,6 +860,24 @@ int left_gveto_down(){
 }
 
 
+int check_corner_xy(){
+  HelixFit hf = hcornerxy(); // set vertex info
+  return check_helix(hf,6);
+}
+
+
+int check_corner_xz(){
+  HelixFit hf = hcornerxz(); // set vertex info
+  return check_helix(hf,0);
+}
+
+
+int check_corner_yz(){
+  HelixFit hf = hcorneryz(); // set vertex info
+  return check_helix(hf,7);
+}
+
+
 
 
 TEST_CASE( "Helix A", "[falaise][helixcheck1]" ) {
@@ -789,5 +926,17 @@ TEST_CASE( "left gveto up", "[falaise][helixcheck11]" ) {
 
 TEST_CASE( "left gveto down", "[falaise][helixcheck12]" ) {
   REQUIRE( left_gveto_down() == 1 );
+}
+
+TEST_CASE( "corner xy", "[falaise][helixcheck13]" ) {
+  REQUIRE( check_corner_xy() == 2 );
+}
+
+TEST_CASE( "corner xz", "[falaise][helixcheck14]" ) {
+  REQUIRE( check_corner_xz() == 2 );
+}
+
+TEST_CASE( "corner yz", "[falaise][helixcheck15]" ) {
+  REQUIRE( check_corner_yz() == 2 );
 }
 

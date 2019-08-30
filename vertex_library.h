@@ -17,7 +17,7 @@ class Interval
 private:
   double lower;
   double upper;
-  
+  bool swap;
   
 protected:
 
@@ -33,6 +33,7 @@ public:
   bool empty() {return lower == upper;} // check for empty interval
   bool overlap(Interval other); // return true if overlap exists
   bool contains(double value); // value in interval?
+  bool swapped() {return swap;} // swapped limits at construction?
   void clear() {lower=0.0; upper = 0.0;} // set empty
   void setlow(double value) {lower = value;};
   void sethigh(double value) {upper = value;};
