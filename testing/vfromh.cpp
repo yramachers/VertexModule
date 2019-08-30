@@ -508,8 +508,9 @@ HelixFit hgveto_down() { // artificial helix fit solution
 
 HelixFit hgveto_up_left() { // artificial helix fit solution
   HelixFit hf = hgveto_up();
-  hf.xc = -300.0;
+  hf.xc = -150.0;
   hf.yc = 191.0;
+  hf.zc = 1400.0;
   hf.radius = 190.0; // compare to y centre
   return hf;
 }
@@ -517,9 +518,9 @@ HelixFit hgveto_up_left() { // artificial helix fit solution
 
 HelixFit hgveto_down_left() { // artificial helix fit solution
   HelixFit hf = hgveto_up();
-  hf.xc = -300.0;
+  hf.xc = -150.0;
   hf.yc = -191.0; 
-  hf.zc = -1500.0;
+  hf.zc = -1360.0;
   hf.radius = 190.0; // compare to y centre
   return hf;
 }
