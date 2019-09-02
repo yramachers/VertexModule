@@ -1241,27 +1241,14 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
   spot.neighbourindex = std::make_pair(-1,-1);
   spot.axis3.clear();
 
-  Interval checky(isec2.y(),isec1.y());
-  Interval checkz(isec4.z(),isec3.z());
-  if (checky.swapped()) { // swap points
-    ROOT::Math::XYZPoint dummy = isec1;
-    isec1 = isec2;
-    isec2 = dummy;
-  }
-  if (checkz.swapped()) { // swap points
-    ROOT::Math::XYZPoint dummy = isec3;
-    isec3 = isec4;
-    isec4 = dummy;
-  }
-  
-  // assumes order to points isec1,2 and 3,4
   // axis 1 of rectangle
   if (point_plane_check_x(isec1, true)) {// -y error
     (p.side==0) ? a1.setlow(isec1.y()) : a1.sethigh(isec1.y());
     //    std::cout << "mwall isec1 check x passed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
   }
   else {
-    (p.side==0) ? a1.setlow(ybound.from()) : a1.sethigh(ybound.to());
+    //    (p.side==0) ? a1.setlow(ybound.from()) : a1.sethigh(ybound.to());
+    (p.side==0) ? a1.setlow(findNearestBound(ybound, isec1.y())) : a1.sethigh(findNearestBound(ybound, isec1.y()));
     if (spot.neighbourindex.first<0) {  // identify one of four xwalls
       if (isec1.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
@@ -1277,7 +1264,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
     //    std::cout << "mwall isec2 check x passed: (" << a1.from() << ", " << a1.to() << ") side = " << p.side << std::endl;
   }
   else {
-    (p.side==0) ? a1.sethigh(ybound.to()) : a1.setlow(ybound.from());
+    (p.side==0) ? a1.sethigh(findNearestBound(ybound, isec2.y())) : a1.setlow(findNearestBound(ybound, isec2.y()));
     if (spot.neighbourindex.first<0) {
       if (isec2.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
@@ -1296,7 +1283,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
     //    std::cout << "mwall isec3 check x passed: (" << a2.from() << ", " << a2.to() << ") side = " << p.side << std::endl;
   }
   else {
-    (p.side==0) ? a2.setlow(zbound.from()) : a2.sethigh(zbound.to());
+    (p.side==0) ? a2.setlow(findNearestBound(zbound, isec3.z())) : a2.sethigh(findNearestBound(zbound, isec3.z()));
     if (spot.neighbourindex.first<0) { // identify one of four gveto
       if (isec3.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
@@ -1312,7 +1299,7 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
     //    std::cout << "mwall isec4 check x passed: (" << a2.from() << ", " << a2.to() << ") side = " << p.side << std::endl;
   }
   else {
-    (p.side==0) ? a2.sethigh(zbound.to()) : a2.setlow(zbound.from());
+    (p.side==0) ? a2.sethigh(findNearestBound(zbound, isec4.z())) : a2.setlow(findNearestBound(zbound, isec4.z()));
     if (spot.neighbourindex.first<0) { spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
       if (isec4.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
@@ -1369,19 +1356,6 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   spot.neighbourindex = std::make_pair(-1,-1);
   spot.axis3.clear();
   
-  // Interval checkx(isec2.x(),isec1.x());
-  // Interval checkz(isec4.z(),isec3.z());
-  // if (checkx.swapped()) { // swap points
-  //   ROOT::Math::XYZPoint dummy = isec1;
-  //   isec1 = isec2;
-  //   isec2 = dummy;
-  // }
-  // if (checkz.swapped()) { // swap points
-  //   ROOT::Math::XYZPoint dummy = isec3;
-  //   isec3 = isec4;
-  //   isec4 = dummy;
-  // }
-  
   // axis 1 of rectangle
   if (point_plane_check_y(isec1, p.side, true)) // -y error
     (p.side==1) ? a1.setlow(isec1.x()) : a1.sethigh(isec1.x());
@@ -1402,7 +1376,7 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   if (point_plane_check_y(isec3, p.side, false)) // -z error
     (p.side==0) ? a2.setlow(isec3.z()) : a2.sethigh(isec3.z());
   else {
-    (p.side==0) ? a2.setlow(zbound.from()) : a2.sethigh(zbound.to());
+    (p.side==0) ? a2.setlow(findNearestBound(zbound, isec3.z())) : a2.sethigh(findNearestBound(zbound, isec3.z()));
     if (spot.neighbourindex.first<0) { // identify one of four gveto
       if (isec3.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
@@ -1416,7 +1390,7 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
   if (point_plane_check_y(isec4, p.side, false)) // +z error
     (p.side==0) ? a2.sethigh(isec4.z()) : a2.setlow(isec4.z());
   else {
-    (p.side==0) ? a2.sethigh(zbound.to()) : a2.setlow(zbound.from());
+    (p.side==0) ? a2.sethigh(findNearestBound(zbound, isec4.z())) : a2.setlow(findNearestBound(zbound, isec4.z()));
     if (spot.neighbourindex.first<0) {
       if (isec4.z()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 5 : 9, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 4 : 8, spot.neighbourindex.second);
@@ -1471,19 +1445,6 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   spot.neighbourindex = std::make_pair(-1,-1);
   spot.axis3.clear();
   
-  // Interval checky(isec2.y(),isec1.y());
-  // Interval checkx(isec4.x(),isec3.x());
-  // if (checky.swapped()) { // swap points
-  //   ROOT::Math::XYZPoint dummy = isec1;
-  //   isec1 = isec2;
-  //   isec2 = dummy;
-  // }
-  // if (checkx.swapped()) { // swap points
-  //   ROOT::Math::XYZPoint dummy = isec3;
-  //   isec3 = isec4;
-  //   isec4 = dummy;
-  // }
-  
   // axis 1 of rectangle
   if (point_plane_check_z(isec3, p.side, true)) // -y error
     (p.side==1) ? a1.setlow(isec3.x()) : a1.sethigh(isec3.x());
@@ -1506,7 +1467,7 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   if (point_plane_check_z(isec1, p.side, false)) // -z error
     (p.side==0) ? a2.setlow(isec1.y()) : a2.sethigh(isec1.y());
   else {
-    (p.side==0) ? a2.setlow(ybound.from()) : a2.sethigh(ybound.to());
+    (p.side==0) ? a2.setlow(findNearestBound(ybound, isec1.y())) : a2.sethigh(findNearestBound(ybound, isec1.y()));
     if (spot.neighbourindex.first<0) {
       if (isec1.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
@@ -1520,7 +1481,7 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
   if (point_plane_check_z(isec2, p.side, false)) // +z error
     (p.side==0) ? a2.sethigh(isec2.y()) : a2.setlow(isec2.y());
   else {
-    (p.side==0) ? a2.sethigh(ybound.to()) : a2.setlow(ybound.from());
+    (p.side==0) ? a2.sethigh(findNearestBound(ybound, isec2.y())) : a2.setlow(findNearestBound(ybound, isec2.y()));
     if (spot.neighbourindex.first<0) {
       if (isec2.y()>0.0) spot.neighbourindex = std::make_pair((p.side==0) ? 3 : 7, spot.neighbourindex.second);
       else spot.neighbourindex = std::make_pair((p.side==0) ? 2 : 6, spot.neighbourindex.second);
@@ -1689,6 +1650,13 @@ void VertexExtrapolator::set_wirevertex(bool foilside) { // which cell contains 
     wirevertex.axis3.setlow(mi.zcoord - 10.0); // z
     wirevertex.axis3.sethigh(mi.zcoord + 10.0); // z
   }
+}
+
+
+double VertexExtrapolator::findNearestBound(Interval bound, double value) {
+  double diff1 = fabs(bound.from() - value);
+  double diff2 = fabs(bound.to() - value);
+  return (diff1 <= diff2) ? bound.from() : bound.to();
 }
 
 

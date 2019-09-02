@@ -200,6 +200,7 @@ class VertexExtrapolator
   bool point_plane_check_z(ROOT::Math::XYZPoint point, int side, bool axis1);
   double set_calospot(std::vector<Line3d>& lc, Plane p, int side);
   double set_calospot_helix(std::vector<Helix3d>& hc, Plane p, int side);
+  double findNearestBound(Interval bound, double value);
   double findLowerYBoundatEnds();
   double findUpperYBoundatEnds();
   double Pointdistance(ROOT::Math::XYZPoint p1, ROOT::Math::XYZPoint p2);
