@@ -34,6 +34,7 @@ void VertexExtrapolator::intersect(int which) // main working method
     if (std::count_if(allInfo.begin(), allInfo.end(), [xlf](const VertexInfo& vi){return vi.clsid == xlf;}) > 0) {
       info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [xlf](const VertexInfo& vi){return vi.clsid == xlf;}) - allInfo.begin()); // linefit case
       calovertex.clear();
+      wirevertex.clear();
       intersect_line(); // sets all results
     }
     break;
@@ -42,6 +43,7 @@ void VertexExtrapolator::intersect(int which) // main working method
     if (std::count_if(allInfo.begin(), allInfo.end(), [xhf](const VertexInfo& vi){return vi.clsid == xhf;}) > 0) {
       info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [xhf](const VertexInfo& vi){return vi.clsid == xhf;}) - allInfo.begin()); // helixfit case
       calovertex.clear();
+      wirevertex.clear();
       intersect_helix(); // sets all results
     }
     break;
@@ -50,6 +52,7 @@ void VertexExtrapolator::intersect(int which) // main working method
     if (std::count_if(allInfo.begin(), allInfo.end(), [xblf](const VertexInfo& vi){return vi.clsid == xblf;}) > 0) {
       info = allInfo.at(std::find_if(allInfo.begin(), allInfo.end(), [xblf](const VertexInfo& vi){return vi.clsid == xblf;}) - allInfo.begin()); // brokenlinefit case
       calovertex.clear();
+      wirevertex.clear();
       intersect_brokenline(); // sets all results
     }
     break;
@@ -89,18 +92,15 @@ void VertexExtrapolator::intersect_line()
       calovertex.at(i).areafraction = (calovertex.at(i).axis1.width() * calovertex.at(i).axis2.width()) / sum_area;
 
     // no wire vertex
-    wirevertex.axis1.clear(); // zero axes
-    wirevertex.axis2.clear();
-    wirevertex.axis3.clear();
-    wirevertex.planeid= -1;
-    wirevertex.side   = -1;
-    wirevertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+    wirevertex.clear(); // empty vector
+
   }
   else if (info.foilcalo.first && !info.foilcalo.second) { // only a foil vertex is required
     // vertex on foil
     set_foilspot();
 
     calovertex.clear(); // empty vector
+    wirevertex.clear(); // empty vector
 
     set_wirevertex(!foilside);
   }
@@ -112,6 +112,7 @@ void VertexExtrapolator::intersect_line()
     foilvertex.side   = -1;
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
 
+    wirevertex.clear(); // empty vector
     set_wirevertex(foilside);
 
     for (Plane p : allPlanes) {
@@ -136,6 +137,7 @@ void VertexExtrapolator::intersect_line()
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
 
     calovertex.clear(); // empty vector
+    wirevertex.clear(); // empty vector
 
     set_wirevertex(foilside);
     set_wirevertex(!foilside);
@@ -435,18 +437,15 @@ void VertexExtrapolator::intersect_helix()
       calovertex.at(i).areafraction = (calovertex.at(i).axis1.width() * calovertex.at(i).axis2.width()) / sum_area;
 
     // no wire vertex
-    wirevertex.axis1.clear(); // zero axes
-    wirevertex.axis2.clear();
-    wirevertex.axis3.clear();
-    wirevertex.planeid= -1;
-    wirevertex.side   = -1;
-    wirevertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
+    wirevertex.clear(); // empty vector
+
   }
   else if (info.foilcalo.first && !info.foilcalo.second) {
     // vertex on foil
     set_foilspot_helix(hc);
 
     calovertex.clear(); // empty vector
+    wirevertex.clear(); // empty vector
 
     set_wirevertex(!foilside);
   }
@@ -458,6 +457,7 @@ void VertexExtrapolator::intersect_helix()
     foilvertex.side   = -1;
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
 
+    wirevertex.clear(); // empty vector
     set_wirevertex(foilside);
 
     for (Plane p : allPlanes) {
@@ -479,6 +479,7 @@ void VertexExtrapolator::intersect_helix()
     foilvertex.neighbourindex = std::make_pair(-1,-1); // no neighbours
 
     calovertex.clear(); // empty vector
+    wirevertex.clear(); // empty vector
 
     set_wirevertex(foilside);
     set_wirevertex(!foilside);
@@ -1634,30 +1635,31 @@ double VertexExtrapolator::findUpperYBoundatEnds() {
 
 // for wire vertexing
 void VertexExtrapolator::set_wirevertex(bool foilside) { // which cell contains the wire vertex
-  wirevertex.planeid = -1; // any plane as required = a box
-  wirevertex.side = info.side; // where the cluster is
-  wirevertex.neighbourindex = std::make_pair(-1,-1); // none
-  wirevertex.areafraction = 1.0; // by definition
-  wirevertex.axis3.clear();
+  Rectangle spot; // into wirevertex container
+  spot.planeid = -1; // any plane as required = a box
+  spot.side = info.side; // where the cluster is
+  spot.neighbourindex = std::make_pair(-1,-1); // none
+  spot.areafraction = 1.0; // by definition
 
   if (foilside) {
     MetaInfo mi = findFoilSideCorner();
-    wirevertex.axis1.setlow(mi.wirex - 22.0); // x [mm]
-    wirevertex.axis1.sethigh(mi.wirex + 22.0); // x
-    wirevertex.axis2.setlow(mi.wirey - 22.0); // y
-    wirevertex.axis2.sethigh(mi.wirey + 22.0); // y
-    wirevertex.axis3.setlow(mi.zcoord - 10.0); // z
-    wirevertex.axis3.sethigh(mi.zcoord + 10.0); // z
+    spot.axis1.setlow(mi.wirex - 22.0); // x [mm]
+    spot.axis1.sethigh(mi.wirex + 22.0); // x
+    spot.axis2.setlow(mi.wirey - 22.0); // y
+    spot.axis2.sethigh(mi.wirey + 22.0); // y
+    spot.axis3.setlow(mi.zcoord - 10.0); // z
+    spot.axis3.sethigh(mi.zcoord + 10.0); // z
   }
   else {
     MetaInfo mi = findCaloSideCorner();
-    wirevertex.axis1.setlow(mi.wirex - 22.0); // x
-    wirevertex.axis1.sethigh(mi.wirex + 22.0); // x
-    wirevertex.axis2.setlow(mi.wirey - 22.0); // y
-    wirevertex.axis2.sethigh(mi.wirey + 22.0); // y
-    wirevertex.axis3.setlow(mi.zcoord - 10.0); // z
-    wirevertex.axis3.sethigh(mi.zcoord + 10.0); // z
+    spot.axis1.setlow(mi.wirex - 22.0); // x
+    spot.axis1.sethigh(mi.wirex + 22.0); // x
+    spot.axis2.setlow(mi.wirey - 22.0); // y
+    spot.axis2.sethigh(mi.wirey + 22.0); // y
+    spot.axis3.setlow(mi.zcoord - 10.0); // z
+    spot.axis3.sethigh(mi.zcoord + 10.0); // z
   }
+  wirevertex.push_back(spot); // can contain up to 2 wire vertices
 }
 
 
@@ -1692,8 +1694,8 @@ MetaInfo VertexExtrapolator::findCaloSideCorner() {
     dummy.push_back(val.wirey); // check y coordinate
   std::vector<double>::iterator minit = std::min_element(dummy.begin(), dummy.end());
   std::vector<double>::iterator maxit = std::max_element(dummy.begin(), dummy.end());
-  MetaInfo minmi = info.minx.at(minit - dummy.begin());
-  MetaInfo maxmi = info.minx.at(maxit - dummy.begin());
+  MetaInfo minmi = info.maxx.at(minit - dummy.begin());
+  MetaInfo maxmi = info.maxx.at(maxit - dummy.begin());
   return findCorner(minmi, maxmi);
 }
 

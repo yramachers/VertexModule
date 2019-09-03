@@ -177,8 +177,8 @@ class VertexExtrapolator
   // in form of two intervals as main axes
 
  private:
-  Rectangle wirevertex;
   Rectangle foilvertex;
+  std::vector<Rectangle> wirevertex;
   std::vector<Rectangle> calovertex;
   LineFit lf;
   HelixFit hf;
@@ -240,6 +240,7 @@ public:
 
   // Results from here
   Rectangle onfoil() {return foilvertex;} // rectangle struct on foil, empty axes if none
+  std::vector<Rectangle> onwire() {return wirevertex;} // rectangle struct on wire, empty axes if none
   std::vector<Rectangle> oncalo() {return calovertex;} // up to three vertices possible on calo walls
 
 };
