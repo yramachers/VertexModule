@@ -242,6 +242,7 @@ public:
   Rectangle onfoil() {return foilvertex;} // rectangle struct on foil, empty axes if none
   std::vector<Rectangle> onwire() {return wirevertex;} // rectangle struct on wire, empty axes if none
   std::vector<Rectangle> oncalo() {return calovertex;} // up to three vertices possible on calo walls
+  std::vector<VertexInfo> vertexinfo() {return allInfo;} // all vertex info structs
 
 };
 

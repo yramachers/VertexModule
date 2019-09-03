@@ -114,24 +114,32 @@ std::vector<Plane> make_planes() {
 
 
 void printve(VertexExtrapolator& ve) {
+  int id = 1; // for all
+  std::vector<VertexInfo> all = ve.vertexinfo();
+  VertexInfo vinfo = all.at(std::find_if(all.begin(), all.end(), [id](const VertexInfo& vi){return vi.clsid == id;}) - all.begin());
+
   // Results
-  Rectangle fvertex = ve.onfoil();
-  std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
-  std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
-
-  std::vector<Rectangle> wvertex = ve.onwire();
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& wv : wvertex) {
-    std::cout << "Rectangle on wire: 1:[" << wv.axis1.from() << ", " << wv.axis1.to() << "]; 2: [" << wv.axis2.from() << ", " << wv.axis2.to() << "];" << std::endl;
-    std::cout << "Rectangle on wire: 3:[" << wv.axis3.from() << ", " << wv.axis3.to() << "]" << std::endl;
-    std::cout << "area fraction: " << wv.areafraction << " on plane " << wv.planeid << " neighbours: (" << wv.neighbourindex.first << ", " << wv.neighbourindex.second << ")" << std::endl;
+  if (vinfo.foilcalo.first) {
+    Rectangle fvertex = ve.onfoil();
+    std::cout << "Rectangle on foil: 1:[" << fvertex.axis1.from() << ", " << fvertex.axis1.to() << "]; 2: [" << fvertex.axis2.from() << ", " << fvertex.axis2.to() << "];" << std::endl;
+    std::cout << "area fraction: " << fvertex.areafraction << " on plane " << fvertex.planeid << " neighbours: (" << fvertex.neighbourindex.first << ", " << fvertex.neighbourindex.second << ")" << std::endl;
   }
-
-  std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
-  std::cout << "Rectangle on calo: " << std::endl;
-  for (auto& cv : cvertex) {
-    std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
-    std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+  if (vinfo.foilcalo.second) {
+    std::vector<Rectangle> cvertex = ve.oncalo(); // should be just one entry
+    std::cout << "Rectangle on calo: " << std::endl;
+    for (auto& cv : cvertex) {
+      std::cout << "on calo: 1:[" << cv.axis1.from() << ", " << cv.axis1.to() << "]; 2: [" << cv.axis2.from() << ", " << cv.axis2.to() << "];" << std::endl;
+      std::cout << "area fraction: " << cv.areafraction << " on plane " << cv.planeid << " neighbours: (" << cv.neighbourindex.first << ", " << cv.neighbourindex.second << ")" << std::endl;
+    }
+  }
+  if (!vinfo.foilcalo.first || !vinfo.foilcalo.second) {
+    std::vector<Rectangle> wvertex = ve.onwire();
+    std::cout << "Rectangle on Wire: " << std::endl;
+    for (auto& wv : wvertex) {
+      std::cout << "on wire: 1:[" << wv.axis1.from() << ", " << wv.axis1.to() << "]; 2: [" << wv.axis2.from() << ", " << wv.axis2.to() << "];" << std::endl;
+      std::cout << "on wire: 3:[" << wv.axis3.from() << ", " << wv.axis3.to() << "]" << std::endl;
+      std::cout << "area fraction: " << wv.areafraction << " on plane " << wv.planeid << " neighbours: (" << wv.neighbourindex.first << ", " << wv.neighbourindex.second << ")" << std::endl;
+    }
   }
 }
 
@@ -316,9 +324,33 @@ int check_caseA(){
   return check_wirevertex(0);
 }
 
+int check_caseB(){
+  return check_wirevertex(1);
+}
+
+int check_caseC(){
+  return check_wirevertex(2);
+}
+
+int check_caseD(){
+  return check_wirevertex(3);
+}
+
 
 
 TEST_CASE( "Case A", "[falaise][wirecheck1]" ) {
   REQUIRE( check_caseA() == 1 );
+}
+
+TEST_CASE( "Case B", "[falaise][wirecheck2]" ) {
+  REQUIRE( check_caseB() == 1 );
+}
+
+TEST_CASE( "Case C", "[falaise][wirecheck3]" ) {
+  REQUIRE( check_caseC() == 1 );
+}
+
+TEST_CASE( "Case D", "[falaise][wirecheck4]" ) {
+  REQUIRE( check_caseD() == 1 );
 }
 
