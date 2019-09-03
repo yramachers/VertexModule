@@ -483,6 +483,7 @@ void VertexExtrapolator::intersect_helix()
     set_wirevertex(foilside);
     set_wirevertex(!foilside);
   }
+
   return;
 }
 
@@ -1005,7 +1006,8 @@ double VertexExtrapolator::mainwall_check(std::vector<Line3d>& lc, Plane p, doub
     sumarea = (width1 * width2) + area;
     spot.areafraction = (width1 * width2) / sumarea; // proper fraction of sum projected area
   }
-  calovertex.push_back(spot);
+  if (calovertex.size()<3) // allow 3 entries max
+    calovertex.push_back(spot);
   return sumarea; // that projection area
 }
 
@@ -1108,7 +1110,8 @@ double VertexExtrapolator::xwall_check(std::vector<Line3d>& lc, Plane p, double 
     spot.areafraction = (width1 * width2) / sumarea; // proper fraction of sum projected area
   }
 
-  calovertex.push_back(spot);
+  if (calovertex.size()<3) // allow 3 entries max
+    calovertex.push_back(spot);
   return sumarea;
 }
 
@@ -1197,7 +1200,8 @@ double VertexExtrapolator::gveto_check(std::vector<Line3d>& lc, Plane p, double 
     spot.areafraction = (width1 * width2) / sumarea; // proper fraction of sum projected area
   }
 
-  calovertex.push_back(spot);
+  if (calovertex.size()<3) // allow 3 entries max
+    calovertex.push_back(spot);
   return sumarea;
 }
 
@@ -1329,7 +1333,8 @@ double VertexExtrapolator::mainwall_check_helix(std::vector<Helix3d>& hc, Plane 
     spot.areafraction = (width1 * width2) / sumarea; // proper fraction of sum projected area
   }
 
-  calovertex.push_back(spot);
+  if (calovertex.size()<3) // allow 3 entries max
+    calovertex.push_back(spot);
   return sumarea;
 }
 
@@ -1418,7 +1423,8 @@ double VertexExtrapolator::xwall_check_helix(std::vector<Helix3d>& hc, Plane p, 
     spot.areafraction = (width1 * width2) / sumarea; // proper fraction of sum projected area
   }
 
-  calovertex.push_back(spot);
+  if (calovertex.size()<3) // allow 3 entries max
+    calovertex.push_back(spot);
   return sumarea;
 }
 
@@ -1508,7 +1514,9 @@ double VertexExtrapolator::gveto_check_helix(std::vector<Helix3d>& hc, Plane p, 
     sumarea = (width1 * width2) + area;
     spot.areafraction = (width1 * width2) / sumarea; // proper fraction of sum projected area
   }
-  calovertex.push_back(spot);
+
+  if (calovertex.size()<3) // allow 3 entries max
+    calovertex.push_back(spot);
   return sumarea;
 }
 

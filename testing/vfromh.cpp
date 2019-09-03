@@ -629,6 +629,35 @@ void cornerhits_xz_left(VertexInfo& vi) {
 }
 
 
+void triplehits(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 1; // on side = 0
+  mi.row = 110; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = 30.0; // not quite but irrelevant here
+  mi.wirey = 2394.0; // central
+  mi.zcoord = 1540.0; // top
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 1; // on side = 0
+  mi.row = 112; // only used for checks at 0 and 112
+  mi.column = 8; // a maximum geiger hit
+  mi.wirex = 412.0; // not quite but irrelevant here
+  mi.wirey = 2482.0; // central + 1 up
+  mi.zcoord = 1540.0; // top
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
 void down_xz_left(VertexInfo& vi) {
   // fill the artificial geiger max min information
   MetaInfo mi;
@@ -711,6 +740,36 @@ void cornerhits_yz_left(VertexInfo& vi) {
   mi.wirex = -184.0; // layer 4
   mi.wirey = 2482.0; // bend downwards
   mi.zcoord = 1548.0; // top
+
+  vi.maxx.push_back(mi);
+  vi.maxy.push_back(mi);
+}
+
+
+
+void triplehits_left(VertexInfo& vi) {
+  // fill the artificial geiger max min information
+  MetaInfo mi;
+  // min
+  mi.hitid = 0;
+  mi.side = 0; // positive x
+  mi.row = 2; // only used for checks at 0 and 112
+  mi.column = 0; // a minimum geiger hit
+  mi.wirex = -30.0; // not quite but irrelevant here
+  mi.wirey = -2394.0; // bottom right
+  mi.zcoord = -1500.0; // top
+
+  vi.minx.push_back(mi);
+  vi.miny.push_back(mi);
+
+  // max
+  mi.hitid = 1;
+  mi.side = 0; // positive x
+  mi.row = 0; // only used for checks at 0 and 112
+  mi.column = 8; // a maximum geiger hit
+  mi.wirex = -412.0; // layer 8
+  mi.wirey = -2482.0; // bend downwards
+  mi.zcoord = -1548.0; // top
 
   vi.maxx.push_back(mi);
   vi.maxy.push_back(mi);
@@ -941,6 +1000,26 @@ HelixFit hcorneryz_left() { // corner xwall gveto
 }
 
 
+HelixFit triple() { // corner all surfaces
+  HelixFit hf = hcornerxz();
+  hf.xc = 5.0;
+  hf.yc = 2250.0;
+  // hf.zc = 1138.0;
+  // hf.pitch = 1000.0; // tilt
+  return hf;
+}
+
+
+HelixFit triple_left() { // corner all surfaces
+  HelixFit hf = hcornerxz();
+  hf.xc = -10.0;
+  hf.yc = -2760.0;
+  hf.zc = -1138.0;
+  hf.pitch = 1000.0; // tilt
+  return hf;
+}
+
+
 
 
 int check_helix(HelixFit hf, int which) {
@@ -967,6 +1046,8 @@ int check_helix(HelixFit hf, int which) {
     cornerhits_yz(vi);
   else if (which==8)
     down_xy(vi);
+  else if (which==9)
+    triplehits(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -1006,6 +1087,8 @@ int check_helix_left(HelixFit hf, int which) {
     down_xy_left(vi);
   else if (which==10)
     cornerhits_yz_left(vi);
+  else if (which==11)
+    triplehits_left(vi);
 
   // need an info vector
   std::vector<VertexInfo> allinfo;
@@ -1144,6 +1227,18 @@ int left_corner_yz(){
 }
 
 
+int left_xyz(){
+  HelixFit hf = triple_left(); // set vertex info
+  return check_helix_left(hf,11);
+}
+
+
+int xyz(){
+  HelixFit hf = triple(); // set vertex info
+  return check_helix(hf,9);
+}
+
+
 
 
 TEST_CASE( "Helix A", "[falaise][helixcheck1]" ) {
@@ -1228,5 +1323,13 @@ TEST_CASE( "left down xy", "[falaise][helixcheck20]" ) {
 
 TEST_CASE( "left corner yz", "[falaise][helixcheck21]" ) {
   REQUIRE( left_corner_yz() == 2 );
+}
+
+TEST_CASE( "left corner xyz", "[falaise][helixcheck22]" ) {
+  REQUIRE( left_xyz() == 3 );
+}
+
+TEST_CASE( "corner xyz", "[falaise][helixcheck23]" ) {
+  REQUIRE( xyz() == 3 );
 }
 
