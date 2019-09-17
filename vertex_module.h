@@ -52,7 +52,7 @@ public:
 protected:
 	VertexInfo check_on_wire(const snemo::datamodel::calibrated_tracker_hit::collection_type & data);
 	void findmaxmin(VertexInfo& vi, const sdm::calibrated_tracker_hit::collection_type & data);
-
+	std::vector<Plane> make_planes();
 
 private:
 	int eventCounter;
